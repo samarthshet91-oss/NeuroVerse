@@ -20,6 +20,7 @@ import {
 } from '@/src/data/brainRegions';
 import { getRegionById } from '@/src/exploration/ExplorationController';
 import { useExplorationStore } from '@/src/store/explorationStore';
+import { PanelHeading, StatusBadge } from '@/src/components/ui/InterfacePrimitives';
 
 interface ParamSliderProps {
   label: string;
@@ -123,14 +124,12 @@ export function ContextInfoPanel() {
     connectedEdges.find((e) => e.id === selectedEdgeId) ?? outgoingEdges[0] ?? connectedEdges[0] ?? null;
 
   return (
-    <aside className="nv-scroll flex h-full w-full flex-col gap-4 overflow-y-auto border-r border-slate-800/80 bg-[#0a101f]/95 p-4 text-slate-200">
+    <aside className="nv-scroll flex h-full w-full flex-col gap-4 overflow-y-auto border-r border-slate-700/40 bg-[#0b1120]/95 p-4 text-slate-200 backdrop-blur-xl">
       {/* WHOLE BRAIN VIEW */}
       {explorationState === 'BRAIN_VIEW' && (
         <>
           <div>
-            <h2 className="font-display text-base font-semibold text-slate-100">
-              Explore the Human Brain
-            </h2>
+            <PanelHeading eyebrow="Exploration level 01" title="Whole brain atlas" />
             <p className="mt-1 text-xs leading-relaxed text-slate-400">
               Spin and zoom the 3D brain, then pick a region to fly inside its branching neural
               tissue.
@@ -147,10 +146,10 @@ export function ContextInfoPanel() {
                   onMouseEnter={() => setHoveredRegion(region.id)}
                   onMouseLeave={() => setHoveredRegion(null)}
                   onClick={() => selectRegion(region.id)}
-                  className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors ${
+                  className={`nv-region-card flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left ${
                     isActive
-                      ? 'border-cyan-400/50 bg-cyan-500/10 text-cyan-100'
-                      : 'border-slate-800/80 bg-slate-900/40 text-slate-300 hover:border-slate-700 hover:bg-slate-900/80'
+                      ? 'border-cyan-400/50 bg-cyan-400/10 text-cyan-100 shadow-[inset_2px_0_0_#22d3ee]'
+                      : 'border-slate-700/50 bg-slate-900/35 text-slate-300 hover:border-slate-600 hover:bg-slate-800/80'
                   }`}
                 >
                   <div className="min-w-0">
@@ -182,7 +181,7 @@ export function ContextInfoPanel() {
             </div>
           )}
 
-          <div className="mt-auto rounded-lg border border-slate-800/80 bg-slate-900/45 p-2.5 text-[11px] leading-relaxed text-slate-400">
+          <div className="nv-surface mt-auto rounded-xl p-3 text-[11px] leading-relaxed text-slate-400">
             <div className="flex items-start gap-2">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-400" />
               <span>{ILLUSTRATIVE_BRAIN_DISCLAIMER}</span>
@@ -195,6 +194,10 @@ export function ContextInfoPanel() {
       {explorationState !== 'BRAIN_VIEW' && selectedRegion && (
         <>
           <div>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="nv-eyebrow mb-0">Exploration level {explorationState === 'NEURON_VIEW' ? '03' : '02'}</span>
+              <StatusBadge tone={explorationState === 'NEURON_VIEW' ? 'violet' : 'cyan'}>{explorationState === 'NEURON_VIEW' ? 'Neuron focus' : 'Tissue map'}</StatusBadge>
+            </div>
             <div className="text-[11px] text-cyan-400">
               {selectedRegion.name} ·{' '}
               {activeNetwork ? `${activeNetwork.nodes.length} neurons` : 'Tissue'}
@@ -213,7 +216,7 @@ export function ContextInfoPanel() {
 
           {/* Selected Neuron Card (Beginner-Friendly Primary Actions) */}
           {selectedNeuron && (
-            <div className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/65 p-3">
+            <div className="nv-surface space-y-3 rounded-xl p-3.5">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-display text-sm font-semibold text-slate-100">

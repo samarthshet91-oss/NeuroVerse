@@ -68,23 +68,25 @@ export function MembraneChart({
     return (
       <ResponsiveContainer width="100%" height={180}>
         <LineChart data={neuronData} margin={{ top: 8, right: 16, left: -12, bottom: 0 }}>
-          <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
+          <CartesianGrid stroke="#334155" strokeOpacity={0.5} strokeDasharray="3 5" />
           <XAxis
             dataKey="time"
             stroke="#64748b"
             tick={{ fontSize: 11, fill: '#94a3b8' }}
-            tickFormatter={(v) => `${v}ms`}
+            label={{ value: 'Time (ms)', position: 'insideBottomRight', offset: -2, fill: '#64748b', fontSize: 10 }}
+            tickFormatter={(v) => `${v}`}
           />
           <YAxis
             stroke="#64748b"
             tick={{ fontSize: 11, fill: '#94a3b8' }}
             domain={['auto', 'auto']}
-            tickFormatter={(v) => `${v}mV`}
+            label={{ value: 'mV', position: 'insideTopLeft', offset: 8, fill: '#64748b', fontSize: 10 }}
+            tickFormatter={(v) => `${v}`}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#0b1220',
-              borderColor: '#334155',
+              backgroundColor: '#111827',
+              borderColor: 'rgba(34,211,238,.35)',
               fontSize: '12px',
               color: '#e2e8f0',
             }}
@@ -127,22 +129,24 @@ export function MembraneChart({
     return (
       <ResponsiveContainer width="100%" height={180}>
         <LineChart data={networkData} margin={{ top: 8, right: 16, left: -12, bottom: 0 }}>
-          <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
+          <CartesianGrid stroke="#334155" strokeOpacity={0.5} strokeDasharray="3 5" />
           <XAxis
             dataKey="time"
             stroke="#64748b"
             tick={{ fontSize: 11, fill: '#94a3b8' }}
-            tickFormatter={(v) => `${v}ms`}
+            label={{ value: 'Time (ms)', position: 'insideBottomRight', offset: -2, fill: '#64748b', fontSize: 10 }}
+            tickFormatter={(v) => `${v}`}
           />
           <YAxis
             stroke="#64748b"
             tick={{ fontSize: 11, fill: '#94a3b8' }}
-            tickFormatter={(v) => `${v}mV`}
+            label={{ value: 'mV', position: 'insideTopLeft', offset: 8, fill: '#64748b', fontSize: 10 }}
+            tickFormatter={(v) => `${v}`}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#0b1220',
-              borderColor: '#334155',
+              backgroundColor: '#111827',
+              borderColor: 'rgba(34,211,238,.35)',
               fontSize: '11px',
               color: '#e2e8f0',
             }}

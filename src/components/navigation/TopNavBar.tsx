@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, BrainCircuit, ChevronRight, Orbit } from 'lucide-react';
 import { getRegionById } from '@/src/exploration/ExplorationController';
 import { useExplorationStore } from '@/src/store/explorationStore';
 
@@ -19,20 +19,22 @@ export function TopNavBar() {
     activeNetwork?.nodes.find((n) => n.id === selectedNeuronId) ?? null;
 
   return (
-    <header className="flex h-13 shrink-0 items-center justify-between gap-8 border-b border-slate-800/80 bg-[#080d18]/95 px-5">
-      {/* Zone 1: Single-element wordmark */}
+    <header className="flex h-15 shrink-0 items-center justify-between gap-4 border-b border-slate-700/35 bg-[#0b1120]/95 px-4 backdrop-blur-xl sm:px-5">
       <button
         type="button"
         onClick={resetToBrainView}
-        className="font-display text-lg font-semibold tracking-tight text-slate-100 whitespace-nowrap shrink-0 hover:text-cyan-300 transition-colors focus-visible:outline-2 focus-visible:outline-cyan-400"
+        className="group flex items-center gap-2.5 whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-cyan-400"
       >
-        NeuroVerse
+        <span className="relative grid h-8 w-8 place-items-center rounded-xl border border-cyan-400/35 bg-cyan-400/10 text-cyan-300 shadow-[0_0_22px_rgba(34,211,238,.12)] transition group-hover:border-cyan-300/70">
+          <BrainCircuit className="h-4.5 w-4.5" />
+        </span>
+        <span className="font-display text-base font-semibold tracking-tight text-slate-100 sm:text-lg">Neuro<span className="text-cyan-300">Verse</span></span>
       </button>
 
       {/* Zone 2: Continuous hierarchical exploration breadcrumb (no separate app tabs) */}
       <nav
         aria-label="Exploration hierarchy"
-        className="hidden sm:flex items-center gap-2 text-sm overflow-x-auto"
+        className="hidden min-w-0 flex-1 items-center justify-center gap-2 overflow-x-auto text-sm md:flex"
       >
         <button
           type="button"
@@ -79,15 +81,16 @@ export function TopNavBar() {
           <button
             type="button"
             onClick={triggerCameraReset}
-            className="rounded-lg border border-cyan-500/40 bg-cyan-500/15 px-4 py-1.5 text-xs font-medium text-cyan-200 whitespace-nowrap shrink-0 hover:bg-cyan-500/25 transition-colors"
+            className="nv-action flex items-center gap-1.5 border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-medium text-cyan-100 whitespace-nowrap shrink-0"
           >
+            <Orbit className="h-3.5 w-3.5" />
             Reset View
           </button>
         ) : (
           <button
             type="button"
             onClick={stepBack}
-            className="flex items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/15 px-3.5 py-1.5 text-xs font-medium text-cyan-200 whitespace-nowrap shrink-0 hover:bg-cyan-500/25 transition-colors"
+            className="nv-action flex items-center gap-1.5 border-cyan-400/25 bg-cyan-400/10 px-3.5 py-1.5 text-xs font-medium text-cyan-100 whitespace-nowrap shrink-0"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             <span>

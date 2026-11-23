@@ -29,7 +29,7 @@ export function NeuroVerseShell() {
   }, [initializeBackend]);
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#060911] text-slate-100">
+    <div className="nv-shell flex h-screen w-screen flex-col overflow-hidden text-slate-100">
       <TopNavBar />
       <Breadcrumb />
 
@@ -71,7 +71,7 @@ export function NeuroVerseShell() {
       {/* Main Workspace: Clean Left Guide/Experiment Panel + Unobstructed 3D Viewport */}
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
         {showInfoPanel && (
-          <div className="absolute inset-y-0 left-0 z-20 w-80 max-w-[88vw] lg:static lg:w-84 lg:shrink-0">
+          <div className="absolute inset-y-0 left-0 z-20 w-[21rem] max-w-[92vw] shadow-2xl shadow-black/30 lg:static lg:w-[21rem] lg:shrink-0 lg:shadow-none">
             <ContextInfoPanel />
           </div>
         )}

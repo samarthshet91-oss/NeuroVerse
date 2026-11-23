@@ -69,7 +69,7 @@ export function ExplorationScene() {
     isSoftwareGl || reducedQuality ? [1, 1] : [1, 1.75];
 
   return (
-    <div className="relative h-full w-full bg-[#060911]">
+    <div className="nv-viewport-grid relative h-full w-full bg-[#070B16]">
       <Canvas
         dpr={effectiveDpr}
         camera={{ position: [2.8, 1.45, 3.65], fov: 44, near: 0.1, far: 90 }}
@@ -109,7 +109,7 @@ export function ExplorationScene() {
       </Canvas>
 
       {/* Subtle viewport interaction hint */}
-      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] text-slate-400/80 whitespace-nowrap">
+      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-slate-700/45 bg-[#0b1120]/75 px-3 py-1 text-[10px] tracking-wide text-slate-400/90 shadow-xl backdrop-blur-md whitespace-nowrap">
         {explorationState === 'BRAIN_VIEW'
           ? 'Drag to rotate · Scroll to zoom · Click any brain region to enter'
           : 'Drag to orbit · Scroll to zoom · Click any neuron to inspect & send a signal'}

@@ -1,4 +1,5 @@
-import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Activity, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { StatusBadge } from '@/src/components/ui/InterfacePrimitives';
 import { MembraneChart } from '@/src/components/charts/MembraneChart';
 import { useExplorationStore } from '@/src/store/explorationStore';
 
@@ -44,23 +45,22 @@ export function ResultsPanel() {
   })();
 
   return (
-    <section className="border-t border-slate-800/80 bg-[#080d18]/96 text-slate-200">
-      <div className="flex items-center justify-between px-4 py-2">
+    <section className="border-t border-slate-700/50 bg-[#0b1120]/96 text-slate-200 shadow-[0_-18px_40px_rgba(0,0,0,.12)] backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-3 px-4 py-2.5">
         <button
           type="button"
           onClick={() => setShowChartDrawer(!showChartDrawer)}
-          className="flex items-center gap-2 text-xs font-medium text-slate-200 hover:text-cyan-300 transition-colors"
+          className="group flex items-center gap-2 text-xs font-medium text-slate-200 hover:text-cyan-300 transition-colors"
         >
           {showChartDrawer ? (
             <ChevronDown className="h-4 w-4 text-slate-400" />
           ) : (
             <ChevronUp className="h-4 w-4 text-slate-400" />
           )}
-          <span>Membrane Voltage &amp; Spike Timing</span>
+          <Activity className="h-3.5 w-3.5 text-cyan-400" />
+          <span>Membrane potential</span>
           {lastSolverSource && (
-            <span className="font-mono-tabular text-[11px] text-cyan-300">
-              · {lastSolverSource === 'fastapi-python' ? 'Python FastAPI' : 'Local TypeScript LIF'}
-            </span>
+            <span className="hidden font-mono-tabular text-[10px] text-cyan-300 sm:inline">· {lastSolverSource === 'fastapi-python' ? 'Python FastAPI' : 'Local TypeScript LIF'}</span>
           )}
         </button>
 
@@ -73,7 +73,7 @@ export function ResultsPanel() {
       </div>
 
       {showChartDrawer && (
-        <div className="border-t border-slate-800/80 px-4 py-3">
+        <div className="border-t border-slate-700/45 px-4 py-3">
           {simError && (
             <div className="mb-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
               {simError}
@@ -82,7 +82,7 @@ export function ResultsPanel() {
 
           {focusedNetworkResult && Object.keys(focusedNetworkResult.membrane_traces_mv).length > 0 ? (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-              <div className="lg:col-span-8">
+              <div className="rounded-xl border border-slate-700/50 bg-[#070b16]/65 p-2.5 lg:col-span-8">
                 <MembraneChart
                   mode="network"
                   neuronResult={null}
@@ -91,7 +91,7 @@ export function ResultsPanel() {
                   vThresholdMv={lifParams.v_threshold_mv}
                 />
               </div>
-              <div className="nv-scroll max-h-[180px] overflow-y-auto lg:col-span-4">
+              <div className="nv-scroll max-h-[180px] overflow-y-auto rounded-xl border border-slate-700/50 bg-[#070b16]/50 p-2.5 lg:col-span-4">
                 <table className="w-full text-left text-xs">
                   <thead className="border-b border-slate-800 text-[11px] text-slate-400">
                     <tr>
