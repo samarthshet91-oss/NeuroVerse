@@ -1,0 +1,1 @@
+"""NeuroVerse FastAPI backend package."""
