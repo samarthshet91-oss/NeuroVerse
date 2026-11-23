@@ -1,87 +1,41 @@
 import { useEffect } from 'react';
-import { ChevronRight } from 'lucide-react';
 import { TopNavBar } from '@/src/components/navigation/TopNavBar';
 import { ContextInfoPanel } from '@/src/components/panels/ContextInfoPanel';
 import { Breadcrumb } from '@/src/exploration/Breadcrumb';
-import { getRegionById } from '@/src/exploration/ExplorationController';
 import { ExplorationScene } from '@/src/exploration/ExplorationScene';
 import { ResultsPanel } from '@/src/simulation/ResultsPanel';
+import { ViewportHud } from '@/src/components/hud/ViewportHud';
 import { useExplorationStore } from '@/src/store/explorationStore';
 
 export function NeuroVerseShell() {
   const initializeBackend = useExplorationStore((s) => s.initializeBackend);
   const showInfoPanel = useExplorationStore((s) => s.showInfoPanel);
   const explorationState = useExplorationStore((s) => s.explorationState);
-  const regions = useExplorationStore((s) => s.regions);
-  const selectedRegionId = useExplorationStore((s) => s.selectedRegionId);
-  const selectedNeuronId = useExplorationStore((s) => s.selectedNeuronId);
-  const activeNetwork = useExplorationStore((s) => s.activeNetwork);
-
-  const resetToBrainView = useExplorationStore((s) => s.resetToBrainView);
-  const returnToTissueView = useExplorationStore((s) => s.returnToTissueView);
-
-  const selectedRegion = getRegionById(regions, selectedRegionId);
-  const selectedNeuron =
-    activeNetwork?.nodes.find((n) => n.id === selectedNeuronId) ?? null;
 
   useEffect(() => {
     void initializeBackend();
   }, [initializeBackend]);
 
   return (
-    <div className="nv-shell flex h-screen w-screen flex-col overflow-hidden text-slate-100">
+    <div className={`nv-shell nv-mode-${explorationState.toLowerCase()} flex h-screen w-screen flex-col overflow-hidden text-slate-100`}>
       <TopNavBar />
-      <Breadcrumb />
-
-      {/* Mobile compact hierarchy breadcrumb */}
-      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-slate-800/70 bg-[#080d18] px-3 py-1.5 text-xs sm:hidden">
-        <button
-          type="button"
-          onClick={resetToBrainView}
-          className={
-            explorationState === 'BRAIN_VIEW' ? 'font-semibold text-cyan-300' : 'text-slate-400'
-          }
-        >
-          Brain
-        </button>
-        {selectedRegion && (
-          <>
-            <ChevronRight className="h-3 w-3 text-slate-600" />
-            <button
-              type="button"
-              onClick={returnToTissueView}
-              className={
-                explorationState === 'REGION_VIEW'
-                  ? 'font-semibold text-cyan-300'
-                  : 'text-slate-400'
-              }
-            >
-              {selectedRegion.short_label}
-            </button>
-          </>
-        )}
-        {explorationState === 'NEURON_VIEW' && selectedNeuron && (
-          <>
-            <ChevronRight className="h-3 w-3 text-slate-600" />
-            <span className="font-semibold text-cyan-300">{selectedNeuron.label}</span>
-          </>
-        )}
-      </div>
-
-      {/* Main Workspace: Clean Left Guide/Experiment Panel + Unobstructed 3D Viewport */}
-      <div className="relative flex min-h-0 flex-1 overflow-hidden">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <main className="absolute inset-0 overflow-hidden">
+          <ExplorationScene />
+        </main>
+        <div className="absolute left-3 right-3 top-3 z-30 sm:left-auto sm:right-4 sm:top-4">
+          <Breadcrumb />
+        </div>
+        <ViewportHud />
         {showInfoPanel && (
-          <div className="absolute inset-y-0 left-0 z-20 w-[21rem] max-w-[92vw] shadow-2xl shadow-black/30 lg:static lg:w-[21rem] lg:shrink-0 lg:shadow-none">
+          <div className="nv-context-float absolute bottom-4 left-3 top-16 z-20 w-[21rem] max-w-[calc(100vw-1.5rem)] sm:left-4 sm:top-4 lg:top-4">
             <ContextInfoPanel />
           </div>
         )}
-
-        <main className="relative min-w-0 flex-1 overflow-hidden">
-          <ExplorationScene />
-        </main>
+        <div className="absolute bottom-0 left-0 right-0 z-20">
+          <ResultsPanel />
+        </div>
       </div>
-
-      <ResultsPanel />
     </div>
   );
 }

@@ -37,6 +37,7 @@
   .nv-shell {
     background: radial-gradient(ellipse 80% 55% at 55% 10%, rgba(34, 211, 238, 0.045), transparent 60%), var(--nv-bg);
   }
+  .nv-shell::before { content: ''; pointer-events: none; position: fixed; inset: 0; z-index: 0; background: radial-gradient(circle at 80% 55%, rgba(139,92,246,.06), transparent 32%), radial-gradient(circle at 20% 15%, rgba(34,211,238,.045), transparent 28%); }
   .nv-surface {
     border: 1px solid var(--nv-border);
     background: rgba(17, 24, 39, 0.86);
@@ -57,6 +58,22 @@
   .nv-region-card { transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease; }
   .nv-region-card:hover { transform: translateX(2px); }
   .nv-viewport-grid { background-image: linear-gradient(rgba(34,211,238,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,.035) 1px, transparent 1px); background-size: 48px 48px; }
+  .nv-context-float { transition: width 260ms ease, top 260ms ease, bottom 260ms ease; }
+  .nv-context-panel { border: 1px solid rgba(148, 163, 184, .17); border-radius: 1rem; background: linear-gradient(160deg, rgba(17,24,39,.94), rgba(8,14,28,.9)); box-shadow: 0 28px 60px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.035); backdrop-filter: blur(18px); }
+  .nv-hud-card { border: 1px solid rgba(148,163,184,.16); border-radius: .875rem; background: rgba(8,14,28,.72); box-shadow: 0 18px 40px rgba(0,0,0,.24); backdrop-filter: blur(16px); }
+  .nv-signal-action { position: relative; overflow: hidden; box-shadow: 0 10px 26px rgba(34,211,238,.17); transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease; }
+  .nv-signal-action::before { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,.34), transparent 70%); transform: translateX(-110%); transition: transform 420ms ease; }
+  .nv-signal-action:hover:not(:disabled) { transform: translateY(-1px); background: #67e8f9; box-shadow: 0 14px 34px rgba(34,211,238,.26); }
+  .nv-signal-action:hover:not(:disabled)::before { transform: translateX(110%); }
+  .nv-mode-neuron_view .nv-context-float { width: 18.5rem; }
+  .nv-mode-neuron_view .nv-context-panel { border-color: rgba(139,92,246,.28); }
+  .nv-mode-brain_view .nv-context-float { top: 4rem; bottom: auto; max-height: calc(100% - 5rem); }
+  .nv-mode-region_view .nv-context-float { top: 4rem; bottom: 4rem; }
+  .nv-mode-neuron_view .nv-context-float { top: 4rem; bottom: 4rem; }
+  @media (max-width: 639px) {
+    .nv-context-float { bottom: 1rem; top: 4.25rem; }
+    .nv-mode-brain_view .nv-context-float { top: 4.25rem; bottom: 1rem; max-height: none; }
+  }
 }
 
 .font-display {

@@ -124,7 +124,7 @@ export function ContextInfoPanel() {
     connectedEdges.find((e) => e.id === selectedEdgeId) ?? outgoingEdges[0] ?? connectedEdges[0] ?? null;
 
   return (
-    <aside className="nv-scroll flex h-full w-full flex-col gap-4 overflow-y-auto border-r border-slate-700/40 bg-[#0b1120]/95 p-4 text-slate-200 backdrop-blur-xl">
+    <aside className="nv-context-panel nv-scroll flex h-full w-full flex-col gap-4 overflow-y-auto p-4 text-slate-200">
       {/* WHOLE BRAIN VIEW */}
       {explorationState === 'BRAIN_VIEW' && (
         <>
@@ -136,7 +136,7 @@ export function ContextInfoPanel() {
             </p>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
             {regions.map((region) => {
               const isActive = (hoveredRegionId ?? selectedRegionId) === region.id;
               return (
@@ -146,25 +146,25 @@ export function ContextInfoPanel() {
                   onMouseEnter={() => setHoveredRegion(region.id)}
                   onMouseLeave={() => setHoveredRegion(null)}
                   onClick={() => selectRegion(region.id)}
-                  className={`nv-region-card flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left ${
+                  className={`nv-region-card group flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left ${
                     isActive
                       ? 'border-cyan-400/50 bg-cyan-400/10 text-cyan-100 shadow-[inset_2px_0_0_#22d3ee]'
                       : 'border-slate-700/50 bg-slate-900/35 text-slate-300 hover:border-slate-600 hover:bg-slate-800/80'
                   }`}
                 >
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 text-xs font-medium">
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium">
                       <span
                         className="h-2 w-2 shrink-0 rounded-full"
                         style={{ backgroundColor: region.accent_color }}
                       />
                       <span className="truncate">{region.name}</span>
                     </div>
-                    <p className="mt-0.5 truncate text-[11px] text-slate-400">
+                    <p className="mt-0.5 truncate text-[10px] text-slate-400">
                       {region.subtitle}
                     </p>
                   </div>
-                  <ArrowRight className="ml-2 h-3.5 w-3.5 shrink-0 text-slate-500" />
+                  <ArrowRight className="ml-2 h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-cyan-300" />
                 </button>
               );
             })}
@@ -258,7 +258,7 @@ export function ContextInfoPanel() {
                   type="button"
                   disabled={isSimulating}
                   onClick={() => void sendSignalFromSelectedNeuron()}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-500 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-50 transition-colors"
+                    className="nv-signal-action flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-400 px-3 py-2.5 text-xs font-semibold text-slate-950 disabled:opacity-50"
                 >
                   <Zap className="h-3.5 w-3.5" />
                   {isSimulating ? 'Calculating Signal...' : 'Send Signal'}
@@ -280,7 +280,7 @@ export function ContextInfoPanel() {
 
           {/* Plain-English Signal Narrative, Chronological Firing Log & Playback Controls */}
           {networkSimResult && (
-            <div className="space-y-2.5 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+            <div className="nv-surface space-y-2.5 rounded-xl p-3">
               <div className="flex items-center justify-between gap-2 text-xs">
                 <button
                   type="button"
@@ -429,7 +429,15 @@ export function ContextInfoPanel() {
 
           {/* Beginner Neuron Parts Guide */}
           <div className="space-y-2 border-t border-slate-800/80 pt-3">
-            <div className="text-xs font-medium text-slate-300">Parts of a Neuron</div>
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium text-slate-200">Anatomy reference</div>
+              <span className="text-[10px] uppercase tracking-[.12em] text-slate-500">Interactive key</span>
+            </div>
+            <div className="flex gap-1" aria-label="Neuron anatomy color key">
+              {NEURON_ANATOMY_PARTS.map((part) => (
+                <span key={part.id} title={part.name} className="h-1.5 flex-1 rounded-full" style={{ backgroundColor: part.accent_color }} />
+              ))}
+            </div>
             <div className="grid grid-cols-3 gap-1">
               {NEURON_ANATOMY_PARTS.map((part) => {
                 const active = selectedAnatomyPart === part.id;
@@ -450,7 +458,7 @@ export function ContextInfoPanel() {
               })}
             </div>
 
-            <div className="rounded-lg border border-slate-800 bg-slate-900/55 p-2.5 text-xs">
+            <div className="rounded-lg border border-slate-700/60 bg-[#070b16]/65 p-2.5 text-xs">
               <div className="font-medium text-cyan-300">{anatomyPart.name}</div>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-200">
                 {anatomyPart.simple_explanation}
@@ -463,7 +471,7 @@ export function ContextInfoPanel() {
             <button
               type="button"
               onClick={() => setExperimentOpen(!experimentOpen)}
-              className="flex w-full items-center justify-between rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-slate-900 transition-colors"
+              className="nv-action flex w-full items-center justify-between border-slate-700/55 bg-slate-900/45 px-3 py-2 text-xs font-medium text-slate-200"
             >
               <span className="flex items-center gap-2">
                 <Sliders className="h-3.5 w-3.5 text-violet-300" />
@@ -477,7 +485,7 @@ export function ContextInfoPanel() {
             </button>
 
             {experimentOpen && (
-              <div className="mt-3 space-y-3 rounded-lg border border-slate-800 bg-[#060911]/70 p-3">
+              <div className="mt-3 space-y-3 rounded-xl border border-violet-500/20 bg-[#070b16]/82 p-3">
                 <div className="text-[11px] text-slate-400">
                   LIF Equation: <span className="font-mono-tabular text-cyan-300">C_m·dV/dt = -(V-V_rest)/R_m + I</span>
                 </div>

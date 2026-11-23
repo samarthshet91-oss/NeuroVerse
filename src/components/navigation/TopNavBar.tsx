@@ -19,16 +19,16 @@ export function TopNavBar() {
     activeNetwork?.nodes.find((n) => n.id === selectedNeuronId) ?? null;
 
   return (
-    <header className="flex h-15 shrink-0 items-center justify-between gap-4 border-b border-slate-700/35 bg-[#0b1120]/95 px-4 backdrop-blur-xl sm:px-5">
+    <header className="flex h-12 shrink-0 items-center justify-between gap-4 border-b border-slate-700/35 bg-[#0b1120]/90 px-4 backdrop-blur-xl sm:px-5">
       <button
         type="button"
         onClick={resetToBrainView}
         className="group flex items-center gap-2.5 whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-cyan-400"
       >
-        <span className="relative grid h-8 w-8 place-items-center rounded-xl border border-cyan-400/35 bg-cyan-400/10 text-cyan-300 shadow-[0_0_22px_rgba(34,211,238,.12)] transition group-hover:border-cyan-300/70">
+        <span className="relative grid h-7 w-7 place-items-center rounded-lg border border-cyan-400/35 bg-cyan-400/10 text-cyan-300 shadow-[0_0_22px_rgba(34,211,238,.12)] transition group-hover:border-cyan-300/70">
           <BrainCircuit className="h-4.5 w-4.5" />
         </span>
-        <span className="font-display text-base font-semibold tracking-tight text-slate-100 sm:text-lg">Neuro<span className="text-cyan-300">Verse</span></span>
+        <span className="font-display text-sm font-semibold tracking-tight text-slate-100 sm:text-base">Neuro<span className="text-cyan-300">Verse</span></span>
       </button>
 
       {/* Zone 2: Continuous hierarchical exploration breadcrumb (no separate app tabs) */}

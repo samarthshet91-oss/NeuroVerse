@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Html } from '@react-three/drei';
+import { Html, Line } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -29,6 +29,109 @@ function buildNormalizedTube(
   nonIndexed.deleteAttribute('uv');
   nonIndexed.computeVertexNormals();
   return nonIndexed;
+}
+
+/** A lightweight swept tube with a radius that narrows from base to tip. Used only for the focused cell. */
+function buildTaperedTube(
+  points: [number, number, number][],
+  baseRadius: number,
+  tipRadius: number,
+  tubularSegments: number,
+  radialSegments: number
+): THREE.BufferGeometry {
+  const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)));
+  const frames = curve.computeFrenetFrames(tubularSegments, false);
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const indices: number[] = [];
+
+  for (let i = 0; i <= tubularSegments; i++) {
+    const t = i / tubularSegments;
+    const radius = THREE.MathUtils.lerp(baseRadius, tipRadius, t * t * (3 - 2 * t));
+    const center = curve.getPointAt(t);
+    for (let j = 0; j <= radialSegments; j++) {
+      const theta = (j / radialSegments) * Math.PI * 2;
+      const normal = frames.normals[i]
+        .clone()
+        .multiplyScalar(Math.cos(theta))
+        .addScaledVector(frames.binormals[i], Math.sin(theta));
+      positions.push(
+        center.x + normal.x * radius,
+        center.y + normal.y * radius,
+        center.z + normal.z * radius
+      );
+      normals.push(normal.x, normal.y, normal.z);
+    }
+  }
+
+  const ring = radialSegments + 1;
+  for (let i = 0; i < tubularSegments; i++) {
+    for (let j = 0; j < radialSegments; j++) {
+      const a = i * ring + j;
+      const b = (i + 1) * ring + j;
+      indices.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setIndex(indices);
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function buildOrganicSomaGeometry(): THREE.BufferGeometry {
+  const geometry = new THREE.IcosahedronGeometry(0.22, 4);
+  const pos = geometry.attributes.position;
+  const vertex = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    vertex.fromBufferAttribute(pos, i);
+    const unit = vertex.clone().normalize();
+    const ripple =
+      Math.sin(unit.x * 5.7 + unit.z * 2.1) * 0.026 +
+      Math.cos(unit.y * 7.3 - unit.x * 1.8) * 0.017 +
+      Math.sin((unit.x + unit.y) * 10.0) * 0.009;
+    const asymmetry = 1 + unit.x * 0.045 - unit.y * 0.025;
+    vertex.multiplyScalar((1 + ripple) * asymmetry);
+    vertex.x *= 1.1;
+    vertex.y *= 0.94;
+    pos.setXYZ(i, vertex.x, vertex.y, vertex.z);
+  }
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function anatomyLabelColor(part: NeuronAnatomyPartId | 'nucleus' | 'spine'): string {
+  if (part === 'myelin' || part === 'spine') return '#5eead4';
+  if (part === 'terminals') return '#fbbf24';
+  if (part === 'synapse') return '#fcd34d';
+  if (part === 'axon') return '#a5b4fc';
+  if (part === 'nucleus') return '#c4b5fd';
+  return '#67e8f9';
+}
+
+function AnatomyCallout({
+  label,
+  anchor,
+  target,
+  tone,
+}: {
+  label: string;
+  anchor: [number, number, number];
+  target: [number, number, number];
+  tone: string;
+}) {
+  return (
+    <group>
+      <Line points={[target, anchor]} color={tone} transparent opacity={0.5} lineWidth={0.75} />
+      <Html position={anchor} center distanceFactor={6} style={{ pointerEvents: 'none' }}>
+        <div className="rounded border bg-slate-950/88 px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap shadow-lg" style={{ borderColor: `${tone}99`, color: tone }}>
+          {label}
+        </div>
+      </Html>
+    </group>
+  );
 }
 
 export function DenseNeuralEnvironment() {
@@ -264,7 +367,9 @@ export function DenseNeuralEnvironment() {
   const {
     selectedNeuron,
     connectedNodeSet,
+    selectedSomaGeo,
     selectedDendriteGeos,
+    selectedTertiaryGeos,
     selectedEdgeDetails,
     selectedMyelinSegs,
     closeupLabels,
@@ -272,7 +377,9 @@ export function DenseNeuralEnvironment() {
     const emptySel = {
       selectedNeuron: null as BiologicalNeuronNode | null,
       connectedNodeSet: new Set<string>(),
+      selectedSomaGeo: null as THREE.BufferGeometry | null,
       selectedDendriteGeos: [] as THREE.BufferGeometry[],
+      selectedTertiaryGeos: [] as THREE.BufferGeometry[],
       selectedEdgeDetails: [] as {
         edge: BiologicalSynapseEdge;
         geo: THREE.BufferGeometry;
@@ -284,10 +391,13 @@ export function DenseNeuralEnvironment() {
       selectedMyelinSegs: [] as { pos: THREE.Vector3; quat: THREE.Quaternion }[],
       closeupLabels: {
         soma: null as [number, number, number] | null,
+        nucleus: null as [number, number, number] | null,
         dendrites: null as [number, number, number] | null,
+        axon: null as [number, number, number] | null,
         myelin: null as [number, number, number] | null,
         terminal: null as [number, number, number] | null,
         synapse: null as [number, number, number] | null,
+        spine: null as [number, number, number] | null,
       },
     };
 
@@ -304,13 +414,53 @@ export function DenseNeuralEnvironment() {
       connNodes.add(e.target);
     });
 
+    const branchSegments = reducedQuality ? 6 : 12;
+    const branchRadial = reducedQuality ? 5 : 8;
     const dendGeos = neuron.dendrite_branches
       .filter((b) => b.length >= 2)
-      .map((b) => buildNormalizedTube(b, 0.036 * neuron.scale, 10, 7));
+      .map((b, branchIndex) => {
+        const isPrimary = b.length >= 3;
+        const base = (isPrimary ? 0.052 : 0.035) * neuron.scale;
+        const tip = (isPrimary ? 0.015 : 0.011) * neuron.scale;
+        return buildTaperedTube(b, base, tip, branchSegments, branchRadial);
+      });
+
+    // A few deterministic tertiary twigs enrich only the focused morphology. They do not change graph edges.
+    const tertiaryGeos: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < neuron.dendrite_branches.length; i++) {
+      const branch = neuron.dendrite_branches[i];
+      if (branch.length < 3 || i % 2 !== 0) continue;
+      const root = new THREE.Vector3(...branch[1]);
+      const tip = new THREE.Vector3(...branch[branch.length - 1]);
+      const direction = tip.clone().sub(root).normalize();
+      const side = new THREE.Vector3(-direction.z, 0.34 + (i % 3) * 0.1, direction.x)
+        .normalize()
+        .multiplyScalar((i % 4 === 0 ? 0.38 : -0.31) * neuron.scale);
+      const twigTip = root.clone().lerp(tip, 0.64).add(side);
+      tertiaryGeos.push(
+        buildTaperedTube(
+          [
+            [root.x, root.y, root.z],
+            [root.x + side.x * 0.38, root.y + side.y * 0.38, root.z + side.z * 0.38],
+            [twigTip.x, twigTip.y, twigTip.z],
+          ],
+          0.018 * neuron.scale,
+          0.006 * neuron.scale,
+          reducedQuality ? 4 : 7,
+          reducedQuality ? 4 : 6
+        )
+      );
+    }
 
     const edgeDetails = connEdges.map((edge) => {
       const isOutgoing = edge.source === neuron.id;
-      const geo = buildNormalizedTube(edge.curve_points, 0.032, 20, 8);
+      const geo = buildTaperedTube(
+        edge.curve_points,
+        isOutgoing ? 0.041 : 0.032,
+        isOutgoing ? 0.017 : 0.014,
+        reducedQuality ? 12 : 22,
+        reducedQuality ? 6 : 9
+      );
       const termVec = new THREE.Vector3(...edge.terminal_position);
       const tipVec = new THREE.Vector3(...edge.target_dendrite_tip);
       const synAxis = tipVec.clone().sub(termVec);
@@ -345,7 +495,8 @@ export function DenseNeuralEnvironment() {
         if (edge.source !== neuron.id || !edge.enabled) continue;
         const curve = edgeCurves.get(edge.id);
         if (!curve) continue;
-        for (const t of [0.24, 0.5, 0.72]) {
+        // Uneven deterministic intervals make the sheath read as biological, while preserving the axon path.
+        for (const t of [0.19, 0.43, 0.69]) {
           const pos = curve.getPoint(t);
           const tangent = curve.getTangent(t).normalize();
           const quat = new THREE.Quaternion().setFromUnitVectors(_up, tangent);
@@ -371,6 +522,10 @@ export function DenseNeuralEnvironment() {
     const somaLabel = pickClearAnchor(
       somaVec.clone().add(new THREE.Vector3(0, 0.48, 0)),
       new THREE.Vector3(0, 0.25, 0)
+    );
+    const nucleusLabel = pickClearAnchor(
+      somaVec.clone().add(new THREE.Vector3(0.2, -0.15, 0.2)),
+      new THREE.Vector3(0.22, -0.2, 0)
     );
 
     const primaryOut = connEdges.find((e) => e.source === neuron.id) ?? null;
@@ -398,8 +553,10 @@ export function DenseNeuralEnvironment() {
     }
 
     let myelinLabel: [number, number, number] | null = null;
+    let axonLabel: [number, number, number] | null = null;
     let terminalLabel: [number, number, number] | null = null;
     let synapseLabel: [number, number, number] | null = null;
+    let spineLabel: [number, number, number] | null = null;
 
     if (primaryOut) {
       const outCurve = edgeCurves.get(primaryOut.id);
@@ -407,6 +564,12 @@ export function DenseNeuralEnvironment() {
         myelinLabel = pickClearAnchor(
           outCurve.getPoint(0.45).add(new THREE.Vector3(0, 0.34, 0)),
           new THREE.Vector3(0, 0.28, 0.2)
+        );
+      }
+      if (outCurve) {
+        axonLabel = pickClearAnchor(
+          outCurve.getPoint(0.23).add(new THREE.Vector3(0, -0.34, 0)),
+          new THREE.Vector3(0.28, -0.2, 0)
         );
       }
       terminalLabel = pickClearAnchor(
@@ -417,30 +580,41 @@ export function DenseNeuralEnvironment() {
         new THREE.Vector3(...primaryOut.target_dendrite_tip).add(new THREE.Vector3(0, -0.34, 0)),
         new THREE.Vector3(0.25, -0.28, 0)
       );
+      spineLabel = pickClearAnchor(
+        new THREE.Vector3(...primaryOut.target_dendrite_tip).add(new THREE.Vector3(0.26, 0.1, 0)),
+        new THREE.Vector3(0.28, 0.14, 0)
+      );
     }
 
     return {
       selectedNeuron: neuron,
       connectedNodeSet: connNodes,
+      selectedSomaGeo: buildOrganicSomaGeometry(),
       selectedDendriteGeos: dendGeos,
+      selectedTertiaryGeos: tertiaryGeos,
       selectedEdgeDetails: edgeDetails,
       selectedMyelinSegs: myelinSegs,
       closeupLabels: {
         soma: somaLabel,
+        nucleus: nucleusLabel,
         dendrites: dendLabel,
+        axon: axonLabel,
         myelin: myelinLabel,
         terminal: terminalLabel,
         synapse: synapseLabel,
+        spine: spineLabel,
       },
     };
-  }, [activeNetwork, selectedNeuronId, edgeCurves]);
+  }, [activeNetwork, selectedNeuronId, edgeCurves, reducedQuality]);
 
   useEffect(() => {
     return () => {
+      selectedSomaGeo?.dispose();
       selectedDendriteGeos.forEach((g) => g.dispose());
+      selectedTertiaryGeos.forEach((g) => g.dispose());
       selectedEdgeDetails.forEach((e) => e.geo.dispose());
     };
-  }, [selectedDendriteGeos, selectedEdgeDetails]);
+  }, [selectedSomaGeo, selectedDendriteGeos, selectedTertiaryGeos, selectedEdgeDetails]);
 
   if (!activeNetwork) return null;
 
@@ -562,23 +736,43 @@ export function DenseNeuralEnvironment() {
       {/* 3. Selected Biological Neuron High-Detail Highlight + Connected Pathways */}
       {selectedNeuron && (
         <group>
+          {/* Local, low-cost key and rim lights give the focused cell its own microscopy-like identity. */}
+          <pointLight
+            position={[selectedNeuron.position[0] - 1.4, selectedNeuron.position[1] + 1.8, selectedNeuron.position[2] + 1.6]}
+            color="#67e8f9"
+            intensity={1.15}
+            distance={5.5}
+            decay={2}
+          />
+          <pointLight
+            position={[selectedNeuron.position[0] + 1.3, selectedNeuron.position[1] - 0.5, selectedNeuron.position[2] - 1.1]}
+            color="#a78bfa"
+            intensity={0.45}
+            distance={4.2}
+            decay={2}
+          />
           {/* Highlighted Soma */}
           <group position={selectedNeuron.position} {...partClickProps('soma')}>
-            <mesh scale={selectedNeuron.scale * 1.15}>
-              <icosahedronGeometry args={[0.22, 2]} />
+            <mesh geometry={selectedSomaGeo ?? undefined} scale={selectedNeuron.scale * 1.18}>
               <meshPhysicalMaterial
-                color={selectedAnatomyPart === 'soma' ? '#38bdf8' : '#22d3ee'}
-                emissive="#22d3ee"
-                emissiveIntensity={0.85}
-                roughness={0.22}
+                color={selectedAnatomyPart === 'soma' ? '#65d7ed' : '#238db2'}
+                emissive="#0f5270"
+                emissiveIntensity={selectedAnatomyPart === 'soma' ? 0.48 : 0.2}
+                roughness={0.46}
+                metalness={0.02}
                 transparent
-                opacity={0.92}
-                clearcoat={0.5}
+                opacity={0.96}
+                clearcoat={0.16}
+                clearcoatRoughness={0.7}
               />
             </mesh>
-            <mesh scale={selectedNeuron.scale}>
-              <sphereGeometry args={[0.095, 12, 12]} />
-              <meshBasicMaterial color="#f0f9ff" />
+            <mesh scale={selectedNeuron.scale * 0.68}>
+              <sphereGeometry args={[0.13, reducedQuality ? 10 : 18, reducedQuality ? 10 : 18]} />
+              <meshPhysicalMaterial color="#7561a8" emissive="#5b4a89" emissiveIntensity={0.42} roughness={0.55} metalness={0} />
+            </mesh>
+            <mesh position={[0.035, 0.02, 0.075]} scale={selectedNeuron.scale * 0.35}>
+              <sphereGeometry args={[0.13, 10, 10]} />
+              <meshBasicMaterial color="#ddd6fe" transparent opacity={0.36} depthWrite={false} />
             </mesh>
           </group>
 
@@ -590,8 +784,14 @@ export function DenseNeuralEnvironment() {
                   color={selectedAnatomyPart === 'dendrites' ? '#67e8f9' : '#22d3ee'}
                   emissive="#22d3ee"
                   emissiveIntensity={selectedAnatomyPart === 'dendrites' ? 1.1 : 0.6}
-                  roughness={0.3}
+                  roughness={0.48}
+                  metalness={0.02}
                 />
+              </mesh>
+            ))}
+            {selectedTertiaryGeos.map((geo, idx) => (
+              <mesh key={`twig-${idx}`} geometry={geo}>
+                <meshStandardMaterial color="#2aa4c5" emissive="#0c5673" emissiveIntensity={0.22} roughness={0.56} metalness={0} />
               </mesh>
             ))}
           </group>
@@ -599,17 +799,23 @@ export function DenseNeuralEnvironment() {
           {/* Highlighted Myelin Sheaths on outgoing axons */}
           <group {...partClickProps('myelin')}>
             {selectedMyelinSegs.map((seg, idx) => (
-              <mesh key={idx} position={seg.pos} quaternion={seg.quat}>
-                <capsuleGeometry args={[0.068, 0.28, 5, 10]} />
-                <meshPhysicalMaterial
-                  color={selectedAnatomyPart === 'myelin' ? '#5eead4' : '#2dd4bf'}
-                  emissive="#14b8a6"
-                  emissiveIntensity={selectedAnatomyPart === 'myelin' ? 0.9 : 0.4}
-                  roughness={0.22}
-                  transparent
-                  opacity={0.88}
-                />
-              </mesh>
+              <group key={idx}>
+                <mesh position={seg.pos} quaternion={seg.quat}>
+                  <capsuleGeometry args={[0.068, 0.28, 5, 10]} />
+                  <meshPhysicalMaterial
+                    color={selectedAnatomyPart === 'myelin' ? '#5eead4' : '#2dd4bf'}
+                    emissive="#14b8a6"
+                    emissiveIntensity={selectedAnatomyPart === 'myelin' ? 0.9 : 0.4}
+                    roughness={0.22}
+                    transparent
+                    opacity={0.88}
+                  />
+                </mesh>
+                <mesh position={seg.pos} quaternion={seg.quat} scale={[1.15, 1, 1.15]}>
+                  <torusGeometry args={[0.073, 0.007, 6, 10]} />
+                  <meshBasicMaterial color="#073b3b" transparent opacity={0.75} />
+                </mesh>
+              </group>
             ))}
           </group>
 
@@ -657,7 +863,7 @@ export function DenseNeuralEnvironment() {
                   </mesh>
                 ))}
 
-                {/* Presynaptic Axon Terminal Bouton (stops before cleft) */}
+                {/* Presynaptic bouton, cleft and spine use graph-provided positions without shifting connectivity. */}
                 <mesh
                   position={edge.terminal_position}
                   quaternion={cleftQuat}
@@ -667,12 +873,19 @@ export function DenseNeuralEnvironment() {
                     selectAnatomyPart('terminals');
                   }}
                 >
-                  <sphereGeometry args={[0.068, 10, 10]} />
-                  <meshStandardMaterial
-                    color="#a78bfa"
-                    emissive="#8b5cf6"
-                    emissiveIntensity={selectedAnatomyPart === 'terminals' ? 1.25 : 0.75}
+                  <sphereGeometry args={[0.081, reducedQuality ? 8 : 14, reducedQuality ? 8 : 14]} />
+                  <meshPhysicalMaterial
+                    color="#ca8a52"
+                    emissive="#b45309"
+                    emissiveIntensity={selectedAnatomyPart === 'terminals' ? 0.95 : 0.35}
+                    roughness={0.5}
+                    metalness={0}
                   />
+                </mesh>
+
+                <mesh position={edge.terminal_position} quaternion={cleftQuat} scale={[1.35, 0.72, 0.72]}>
+                  <sphereGeometry args={[0.081, reducedQuality ? 8 : 14, reducedQuality ? 8 : 14]} />
+                  <meshBasicMaterial color="#fcd34d" transparent opacity={0.2} depthWrite={false} />
                 </mesh>
 
                 {/* Visible Synaptic Cleft Ring (extracellular gap between pre & post membranes) */}
@@ -685,17 +898,17 @@ export function DenseNeuralEnvironment() {
                     selectAnatomyPart('synapse');
                   }}
                 >
-                  <torusGeometry args={[0.068, 0.014, 8, 16]} />
+                  <torusGeometry args={[0.063, 0.009, 8, 16]} />
                   <meshStandardMaterial
-                    color="#fbbf24"
-                    emissive="#f59e0b"
-                    emissiveIntensity={selectedAnatomyPart === 'synapse' ? 1.35 : 0.8}
+                    color="#eab308"
+                    emissive="#a16207"
+                    emissiveIntensity={selectedAnatomyPart === 'synapse' ? 0.9 : 0.35}
                     transparent
                     opacity={edge.enabled ? 0.9 : 0.25}
                   />
                 </mesh>
 
-                {/* Postsynaptic Dendritic Spine Receptor Cap (receiving neuron side) */}
+                {/* Postsynaptic neck + spine head make the receiving side legible at close range. */}
                 <mesh
                   position={spinePos}
                   quaternion={cleftQuat}
@@ -705,12 +918,17 @@ export function DenseNeuralEnvironment() {
                     selectAnatomyPart('dendrites');
                   }}
                 >
-                  <cylinderGeometry args={[0.056, 0.032, 0.065, 10]} />
+                  <cylinderGeometry args={[0.027, 0.047, 0.11, 10]} />
                   <meshStandardMaterial
-                    color="#2dd4bf"
-                    emissive="#14b8a6"
-                    emissiveIntensity={selectedAnatomyPart === 'dendrites' ? 1.1 : 0.65}
+                    color="#4bb8ad"
+                    emissive="#0f766e"
+                    emissiveIntensity={selectedAnatomyPart === 'dendrites' ? 0.68 : 0.22}
+                    roughness={0.48}
                   />
+                </mesh>
+                <mesh position={spinePos} quaternion={cleftQuat} scale={[1.35, 1, 1.35]}>
+                  <sphereGeometry args={[0.052, 10, 10]} />
+                  <meshStandardMaterial color="#6ee7d9" emissive="#0f766e" emissiveIntensity={0.28} roughness={0.48} />
                 </mesh>
               </group>
             );
@@ -744,68 +962,28 @@ export function DenseNeuralEnvironment() {
           {isNeuronFocus && showLabels && (
             <>
               {closeupLabels.soma && (
-                <Html
-                  position={closeupLabels.soma}
-                  center
-                  distanceFactor={6}
-                  style={{ pointerEvents: 'none' }}
-                >
-                  <div className="rounded border border-cyan-400/60 bg-slate-950/90 px-2 py-0.5 text-[11px] font-medium text-cyan-200 whitespace-nowrap">
-                    Soma ({selectedNeuron.label})
-                  </div>
-                </Html>
+                <AnatomyCallout label={`Soma · ${selectedNeuron.label}`} anchor={closeupLabels.soma} target={selectedNeuron.position} tone={anatomyLabelColor('soma')} />
               )}
-
+              {closeupLabels.nucleus && (
+                <AnatomyCallout label="Nucleus" anchor={closeupLabels.nucleus} target={[selectedNeuron.position[0] + 0.03, selectedNeuron.position[1] + 0.02, selectedNeuron.position[2] + 0.08]} tone={anatomyLabelColor('nucleus')} />
+              )}
               {closeupLabels.dendrites && (
-                <Html
-                  position={closeupLabels.dendrites}
-                  center
-                  distanceFactor={6}
-                  style={{ pointerEvents: 'none' }}
-                >
-                  <div className="rounded border border-teal-400/50 bg-slate-950/85 px-1.5 py-0.5 text-[10px] text-teal-200 whitespace-nowrap">
-                    Dendrites
-                  </div>
-                </Html>
+                <AnatomyCallout label="Dendritic arbor" anchor={closeupLabels.dendrites} target={selectedNeuron.dendrite_tips[0] ?? selectedNeuron.position} tone={anatomyLabelColor('dendrites')} />
               )}
-
+              {closeupLabels.axon && selectedEdgeDetails.find((detail) => detail.isOutgoing) && (
+                <AnatomyCallout label="Axon" anchor={closeupLabels.axon} target={selectedEdgeDetails.find((detail) => detail.isOutgoing)?.edge.curve_points[1] ?? selectedNeuron.position} tone={anatomyLabelColor('axon')} />
+              )}
               {closeupLabels.myelin && (
-                <Html
-                  position={closeupLabels.myelin}
-                  center
-                  distanceFactor={6}
-                  style={{ pointerEvents: 'none' }}
-                >
-                  <div className="rounded border border-emerald-400/50 bg-slate-950/85 px-1.5 py-0.5 text-[10px] text-emerald-200 whitespace-nowrap">
-                    Myelin Sheath
-                  </div>
-                </Html>
+                <AnatomyCallout label="Myelin sheath" anchor={closeupLabels.myelin} target={selectedMyelinSegs[1] ? [selectedMyelinSegs[1].pos.x, selectedMyelinSegs[1].pos.y, selectedMyelinSegs[1].pos.z] : selectedNeuron.position} tone={anatomyLabelColor('myelin')} />
               )}
-
-              {closeupLabels.terminal && (
-                <Html
-                  position={closeupLabels.terminal}
-                  center
-                  distanceFactor={6}
-                  style={{ pointerEvents: 'none' }}
-                >
-                  <div className="rounded border border-violet-400/50 bg-slate-950/85 px-1.5 py-0.5 text-[10px] text-violet-200 whitespace-nowrap">
-                    Presynaptic Terminal
-                  </div>
-                </Html>
+              {closeupLabels.terminal && selectedEdgeDetails.find((detail) => detail.isOutgoing) && (
+                <AnatomyCallout label="Axon terminal" anchor={closeupLabels.terminal} target={selectedEdgeDetails.find((detail) => detail.isOutgoing)?.edge.terminal_position ?? selectedNeuron.position} tone={anatomyLabelColor('terminals')} />
               )}
-
-              {closeupLabels.synapse && (
-                <Html
-                  position={closeupLabels.synapse}
-                  center
-                  distanceFactor={6}
-                  style={{ pointerEvents: 'none' }}
-                >
-                  <div className="rounded border border-amber-400/60 bg-slate-950/85 px-1.5 py-0.5 text-[10px] text-amber-200 whitespace-nowrap">
-                    Synaptic Cleft &amp; Spine
-                  </div>
-                </Html>
+              {closeupLabels.synapse && selectedEdgeDetails.find((detail) => detail.isOutgoing) && (
+                <AnatomyCallout label="Synaptic cleft" anchor={closeupLabels.synapse} target={selectedEdgeDetails.find((detail) => detail.isOutgoing)?.edge.synapse_position ?? selectedNeuron.position} tone={anatomyLabelColor('synapse')} />
+              )}
+              {closeupLabels.spine && selectedEdgeDetails.find((detail) => detail.isOutgoing) && (
+                <AnatomyCallout label="Dendritic spine" anchor={closeupLabels.spine} target={selectedEdgeDetails.find((detail) => detail.isOutgoing)?.edge.target_dendrite_tip ?? selectedNeuron.position} tone={anatomyLabelColor('spine')} />
               )}
             </>
           )}

@@ -45,7 +45,7 @@ export function ResultsPanel() {
   })();
 
   return (
-    <section className="border-t border-slate-700/50 bg-[#0b1120]/96 text-slate-200 shadow-[0_-18px_40px_rgba(0,0,0,.12)] backdrop-blur-xl">
+    <section className="mx-3 rounded-t-2xl border border-b-0 border-slate-700/50 bg-[#0b1120]/96 text-slate-200 shadow-[0_-18px_40px_rgba(0,0,0,.22)] backdrop-blur-xl sm:mx-4">
       <div className="flex items-center justify-between gap-3 px-4 py-2.5">
         <button
           type="button"
