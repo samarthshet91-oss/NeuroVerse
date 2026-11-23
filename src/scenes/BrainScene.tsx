@@ -1,87 +1,322 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { Html } from '@react-three/drei';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Html, useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useExplorationStore } from '@/src/store/explorationStore';
-import type { BrainRegion } from '@/src/types/neuroverse';
+import type { BrainRegion, BrainRegionId } from '@/src/types/neuroverse';
 
-function buildHemisphereGeometry(side: -1 | 1, segW: number, segH: number): THREE.BufferGeometry {
+// Preload the anatomically sourced brain model and Draco decoders
+useGLTF.preload('/models/brain.glb', '/draco/');
+
+// Center and scale transform for anatomical brain parenchyma
+const MODEL_CENTER = [0, 1.6192, -0.0088] as const;
+const MODEL_SCALE = 12.8;
+const MODEL_POSITION: [number, number, number] = [
+  -MODEL_CENTER[0] * MODEL_SCALE,
+  -MODEL_CENTER[1] * MODEL_SCALE,
+  -MODEL_CENTER[2] * MODEL_SCALE,
+];
+
+/**
+ * Maps glTF mesh nodes to the six primary anatomical regions of NeuroVerse.
+ * Sourced from Z-Anatomy / BodyParts3D Terminologia Anatomica 2 (TA2) classifications.
+ */
+function getRegionForMesh(name: string, label: string, category: string): BrainRegionId | null {
+  if (category === 'cerebellum') return 'cerebellum';
+  if (category === 'brainstem') return 'brainstem';
+  if (category === 'cortex' || category === 'diencephalon') {
+    const text = `${name} ${label}`.toLowerCase();
+    if (
+      text.includes('occipital') ||
+      text.includes('cuneus') ||
+      text.includes('lingual') ||
+      text.includes('calcarine')
+    ) {
+      return 'occipital';
+    }
+    if (
+      text.includes('temporal') ||
+      text.includes('fusiform') ||
+      text.includes('parahippocampal') ||
+      text.includes('heschl') ||
+      text.includes('uncus') ||
+      text.includes('hippocampus') ||
+      text.includes('collateral') ||
+      text.includes('lat_fis')
+    ) {
+      return 'temporal';
+    }
+    if (
+      text.includes('parietal') ||
+      text.includes('postcentral') ||
+      text.includes('precuneus') ||
+      text.includes('supramarginal') ||
+      text.includes('angular') ||
+      text.includes('intraparietal') ||
+      text.includes('marginal') ||
+      text.includes('jensen') ||
+      text.includes('posteroventral') ||
+      text.includes('posterior dorsal')
+    ) {
+      return 'parietal';
+    }
+    // Frontal lobe / prefrontal cortex / central sulcus / insular cortex
+    return 'frontal';
+  }
+  return null;
+}
+
+/** Non-parenchyma categories to hide so the surface reads as a clean anatomical organ */
+const HIDDEN_CATEGORIES = new Set([
+  'arteries',
+  'veins_sinuses',
+  'cranial_nerves',
+  'meninges_dura',
+]);
+
+interface RegionColors {
+  base: string;
+  emissive: string;
+}
+
+const REGION_ACCENT_COLORS: Record<BrainRegionId, RegionColors> = {
+  frontal: { base: '#22d3ee', emissive: '#0891b2' },
+  parietal: { base: '#38bdf8', emissive: '#0284c7' },
+  temporal: { base: '#a78bfa', emissive: '#7c3aed' },
+  occipital: { base: '#818cf8', emissive: '#4f46e5' },
+  cerebellum: { base: '#2dd4bf', emissive: '#0d9488' },
+  brainstem: { base: '#c084fc', emissive: '#9333ea' },
+};
+
+/**
+ * Anatomical 3D Brain Model loaded from web-optimized glTF asset.
+ * Derived from Z-Anatomy and BodyParts3D / DBCLS under CC BY-SA 4.0.
+ */
+function AnatomicalBrainModel({
+  hoveredRegionId,
+  selectedRegionId,
+  reducedQuality,
+  onHoverRegion,
+  onSelectRegion,
+}: {
+  hoveredRegionId: BrainRegionId | null;
+  selectedRegionId: BrainRegionId | null;
+  reducedQuality: boolean;
+  onHoverRegion: (id: BrainRegionId | null) => void;
+  onSelectRegion: (id: BrainRegionId) => void;
+}) {
+  const { scene } = useGLTF('/models/brain.glb', '/draco/');
+  const clonedScene = useMemo(() => scene.clone(true), [scene]);
+
+  // Create shared material palette for premium scientific atlas visualization
+  const materials = useMemo(() => {
+    const activeRegion = hoveredRegionId ?? selectedRegionId;
+
+    const baseCortex = new THREE.MeshPhysicalMaterial({
+      color: '#1a2c46',
+      emissive: '#0b1c31',
+      emissiveIntensity: activeRegion ? 0.08 : 0.22,
+      roughness: 0.52,
+      metalness: 0.05,
+      transparent: true,
+      opacity: activeRegion ? 0.7 : 0.94,
+      clearcoat: reducedQuality ? 0 : 0.25,
+      clearcoatRoughness: 0.65,
+    });
+
+    const baseCerebellum = new THREE.MeshPhysicalMaterial({
+      color: '#173048',
+      emissive: '#092732',
+      emissiveIntensity: activeRegion ? 0.08 : 0.24,
+      roughness: 0.6,
+      metalness: 0.04,
+      transparent: true,
+      opacity: activeRegion ? 0.72 : 0.95,
+      clearcoat: reducedQuality ? 0 : 0.2,
+      clearcoatRoughness: 0.7,
+    });
+
+    const baseBrainstem = new THREE.MeshPhysicalMaterial({
+      color: '#1d2645',
+      emissive: '#111533',
+      emissiveIntensity: activeRegion ? 0.08 : 0.25,
+      roughness: 0.48,
+      metalness: 0.06,
+      transparent: true,
+      opacity: activeRegion ? 0.75 : 0.96,
+      clearcoat: reducedQuality ? 0 : 0.3,
+      clearcoatRoughness: 0.5,
+    });
+
+    const highlightedMaterials: Partial<Record<BrainRegionId, THREE.MeshStandardMaterial>> = {};
+    const regionIds: BrainRegionId[] = [
+      'frontal',
+      'parietal',
+      'temporal',
+      'occipital',
+      'cerebellum',
+      'brainstem',
+    ];
+
+    for (const rId of regionIds) {
+      const palette = REGION_ACCENT_COLORS[rId];
+      const isSelected = selectedRegionId === rId;
+      const isHovered = hoveredRegionId === rId;
+      const isActive = isSelected || isHovered;
+
+      if (isActive) {
+        highlightedMaterials[rId] = new THREE.MeshPhysicalMaterial({
+          color: palette.base,
+          emissive: palette.emissive,
+          emissiveIntensity: isHovered ? 1.05 : 0.78,
+          roughness: 0.35,
+          metalness: 0.08,
+          transparent: true,
+          opacity: 0.98,
+          clearcoat: reducedQuality ? 0 : 0.38,
+          clearcoatRoughness: 0.45,
+        });
+      }
+    }
+
+    return {
+      baseCortex,
+      baseCerebellum,
+      baseBrainstem,
+      highlighted: highlightedMaterials,
+    };
+  }, [hoveredRegionId, selectedRegionId, reducedQuality]);
+
+  useEffect(() => {
+    return () => {
+      materials.baseCortex.dispose();
+      materials.baseCerebellum.dispose();
+      materials.baseBrainstem.dispose();
+      Object.values(materials.highlighted).forEach((m) => m?.dispose());
+    };
+  }, [materials]);
+
+  // Apply materials and interaction handlers across all semantic meshes
+  useEffect(() => {
+    clonedScene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh;
+        const cat = (mesh.userData?.bx_cat as string) || '';
+
+        // Hide external non-parenchymal vessels and nerves
+        if (HIDDEN_CATEGORIES.has(cat)) {
+          mesh.visible = false;
+          return;
+        }
+
+        mesh.visible = true;
+        const regionId = getRegionForMesh(
+          mesh.name,
+          (mesh.userData?.bx_label as string) || '',
+          cat
+        );
+
+        if (regionId && materials.highlighted[regionId]) {
+          mesh.material = materials.highlighted[regionId]!;
+        } else if (cat === 'cerebellum') {
+          mesh.material = materials.baseCerebellum;
+        } else if (cat === 'brainstem') {
+          mesh.material = materials.baseBrainstem;
+        } else {
+          mesh.material = materials.baseCortex;
+        }
+
+        // Store regionId for pointer event dispatch
+        mesh.userData.regionId = regionId;
+      }
+    });
+  }, [clonedScene, materials]);
+
+  return (
+    <group
+      position={MODEL_POSITION}
+      scale={MODEL_SCALE}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        const rId = (e.object as THREE.Mesh).userData?.regionId as BrainRegionId | undefined;
+        if (rId) {
+          onHoverRegion(rId);
+          document.body.style.cursor = 'pointer';
+        }
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation();
+        onHoverRegion(null);
+        document.body.style.cursor = 'auto';
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        const rId = (e.object as THREE.Mesh).userData?.regionId as BrainRegionId | undefined;
+        if (rId) {
+          onSelectRegion(rId);
+        }
+      }}
+    >
+      <primitive object={clonedScene} />
+    </group>
+  );
+}
+
+// Procedural fallback geometries for resilient error boundaries
+function buildFallbackHemisphereGeometry(side: -1 | 1, segW: number, segH: number): THREE.BufferGeometry {
   const geo = new THREE.SphereGeometry(1.0, segW, segH);
   const pos = geo.attributes.position;
   const v = new THREE.Vector3();
 
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i);
-
-    // Flatten medial wall along the longitudinal fissure (x near 0)
     const isMedial = side === 1 ? v.x < 0 : v.x > 0;
-    if (isMedial) {
-      v.x *= 0.22;
-    } else {
-      v.x *= 0.72;
-    }
-
-    // Offset hemisphere laterally from midline fissure
+    v.x = isMedial ? v.x * 0.22 : v.x * 0.72;
     v.x += side * 0.17;
-
-    // Elongate anterior-posterior (Z) and shape dorsal crown (Y)
     v.z *= 1.32;
     v.y *= 0.94;
-
-    // Subtle ventral flattening and temporal lobe downward curve
     if (v.y < -0.15) {
       v.y *= 0.72;
       if (v.z > -0.35 && v.z < 0.55 && Math.abs(v.x) > 0.35) {
         v.y -= 0.14 * (1.0 - Math.abs(v.z - 0.1) * 1.4);
       }
     }
-
-    // Slight frontal pole taper (+Z)
     if (v.z > 0.3) {
-      const taper = 1.0 - (v.z - 0.3) * 0.14;
-      v.x *= taper;
+      v.x *= 1.0 - (v.z - 0.3) * 0.14;
     }
-
-    // Procedural cortical gyri/sulci wave relief
     const fold =
       Math.sin(v.x * 11.5 + v.z * 7.2) * 0.022 +
       Math.cos(v.y * 13.0 - v.z * 9.5) * 0.018;
-    const len = v.length() || 1;
-    v.addScaledVector(v.clone().divideScalar(len), fold);
-
+    v.addScaledVector(v.clone().divideScalar(v.length() || 1), fold);
     pos.setXYZ(i, v.x, v.y, v.z);
   }
-
   geo.computeVertexNormals();
   return geo;
 }
 
-function buildCerebellumGeometry(segW: number, segH: number): THREE.BufferGeometry {
+function buildFallbackCerebellumGeometry(segW: number, segH: number): THREE.BufferGeometry {
   const geo = new THREE.SphereGeometry(0.46, segW, segH);
   const pos = geo.attributes.position;
   const v = new THREE.Vector3();
-
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i);
     v.x *= 1.48;
     v.y *= 0.78;
     v.z *= 0.92;
-    // Characteristic cerebellar transverse folia striations
     const folia = Math.sin(v.y * 38.0) * 0.016;
     v.z += folia * (v.z < 0 ? -1 : 1);
     pos.setXYZ(i, v.x, v.y, v.z);
   }
-
   geo.computeVertexNormals();
   return geo;
 }
 
-function buildBrainstemGeometry(): THREE.BufferGeometry {
+function buildFallbackBrainstemGeometry(): THREE.BufferGeometry {
   const points = [
     new THREE.Vector2(0.01, -0.68),
     new THREE.Vector2(0.14, -0.62),
     new THREE.Vector2(0.17, -0.36),
-    new THREE.Vector2(0.24, -0.14), // Pons bulge
+    new THREE.Vector2(0.24, -0.14),
     new THREE.Vector2(0.21, 0.08),
     new THREE.Vector2(0.18, 0.28),
     new THREE.Vector2(0.01, 0.32),
@@ -121,6 +356,50 @@ function buildPathwayTubes(): THREE.BufferGeometry[] {
     ]),
   ];
   return curves.map((c) => new THREE.TubeGeometry(c, 22, 0.018, 8, false));
+}
+
+function ProceduralFallbackBrain({
+  reducedQuality,
+}: {
+  reducedQuality: boolean;
+}) {
+  const segW = reducedQuality ? 20 : 32;
+  const segH = reducedQuality ? 16 : 24;
+
+  const { leftGeo, rightGeo, cerebellumGeo, brainstemGeo } = useMemo(() => {
+    return {
+      leftGeo: buildFallbackHemisphereGeometry(-1, segW, segH),
+      rightGeo: buildFallbackHemisphereGeometry(1, segW, segH),
+      cerebellumGeo: buildFallbackCerebellumGeometry(reducedQuality ? 16 : 26, reducedQuality ? 12 : 18),
+      brainstemGeo: buildFallbackBrainstemGeometry(),
+    };
+  }, [segW, segH, reducedQuality]);
+
+  useEffect(() => {
+    return () => {
+      leftGeo.dispose();
+      rightGeo.dispose();
+      cerebellumGeo.dispose();
+      brainstemGeo.dispose();
+    };
+  }, [leftGeo, rightGeo, cerebellumGeo, brainstemGeo]);
+
+  return (
+    <group>
+      <mesh geometry={leftGeo}>
+        <meshPhysicalMaterial color="#1a2c46" roughness={0.45} metalness={0.1} transparent opacity={0.8} />
+      </mesh>
+      <mesh geometry={rightGeo}>
+        <meshPhysicalMaterial color="#1a2c46" roughness={0.45} metalness={0.1} transparent opacity={0.8} />
+      </mesh>
+      <mesh geometry={cerebellumGeo} position={[0, -0.56, -0.78]}>
+        <meshStandardMaterial color="#16354d" roughness={0.55} transparent opacity={0.88} />
+      </mesh>
+      <mesh geometry={brainstemGeo} position={[0, -0.68, -0.18]} rotation={[0.2, 0, 0]}>
+        <meshStandardMaterial color="#1f2347" roughness={0.5} transparent opacity={0.9} />
+      </mesh>
+    </group>
+  );
 }
 
 interface RegionMarkerProps {
@@ -237,30 +516,16 @@ export function BrainScene() {
   const setHoveredRegion = useExplorationStore((s) => s.setHoveredRegion);
   const selectRegion = useExplorationStore((s) => s.selectRegion);
 
-  const segW = reducedQuality ? 20 : 32;
-  const segH = reducedQuality ? 16 : 24;
-
-  const { leftGeo, rightGeo, cerebellumGeo, brainstemGeo, pathwayGeos } = useMemo(() => {
-    return {
-      leftGeo: buildHemisphereGeometry(-1, segW, segH),
-      rightGeo: buildHemisphereGeometry(1, segW, segH),
-      cerebellumGeo: buildCerebellumGeometry(reducedQuality ? 16 : 26, reducedQuality ? 12 : 18),
-      brainstemGeo: buildBrainstemGeometry(),
-      pathwayGeos: buildPathwayTubes(),
-    };
-  }, [segW, segH, reducedQuality]);
+  const pathwayGeos = useMemo(() => buildPathwayTubes(), []);
 
   useEffect(() => {
     return () => {
-      leftGeo.dispose();
-      rightGeo.dispose();
-      cerebellumGeo.dispose();
-      brainstemGeo.dispose();
       pathwayGeos.forEach((g) => g.dispose());
       document.body.style.cursor = 'auto';
     };
-  }, [leftGeo, rightGeo, cerebellumGeo, brainstemGeo, pathwayGeos]);
+  }, [pathwayGeos]);
 
+  // Subtle ambient rotation when not hovering any interactive elements
   useFrame((_, delta) => {
     if (!brainGroupRef.current || reducedQuality || hoveredRegionId !== null) return;
     brainGroupRef.current.rotation.y += Math.min(delta, 0.05) * 0.09;
@@ -268,73 +533,16 @@ export function BrainScene() {
 
   return (
     <group ref={brainGroupRef} position={[0, 0.08, 0]}>
-      {/* Left Cerebral Hemisphere */}
-      <mesh geometry={leftGeo}>
-        <meshPhysicalMaterial
-          color="#13253e"
-          emissive="#0c263f"
-          emissiveIntensity={0.35}
-          roughness={0.38}
-          metalness={0.12}
-          transparent
-          opacity={0.78}
-          clearcoat={0.5}
-          clearcoatRoughness={0.35}
+      {/* Anatomically Sourced 3D Brain Model (CC BY-SA 4.0 Z-Anatomy / BodyParts3D) */}
+      <Suspense fallback={<ProceduralFallbackBrain reducedQuality={reducedQuality} />}>
+        <AnatomicalBrainModel
+          hoveredRegionId={hoveredRegionId}
+          selectedRegionId={selectedRegionId}
+          reducedQuality={reducedQuality}
+          onHoverRegion={setHoveredRegion}
+          onSelectRegion={(id) => void selectRegion(id)}
         />
-      </mesh>
-
-      {/* Right Cerebral Hemisphere */}
-      <mesh geometry={rightGeo}>
-        <meshPhysicalMaterial
-          color="#13253e"
-          emissive="#0c263f"
-          emissiveIntensity={0.35}
-          roughness={0.38}
-          metalness={0.12}
-          transparent
-          opacity={0.78}
-          clearcoat={0.5}
-          clearcoatRoughness={0.35}
-        />
-      </mesh>
-
-      {/* Subtle structural wireframe overlay on cortex for scientific contour legibility */}
-      {!reducedQuality && (
-        <>
-          <mesh geometry={leftGeo} scale={1.003}>
-            <meshBasicMaterial color="#22d3ee" wireframe transparent opacity={0.07} />
-          </mesh>
-          <mesh geometry={rightGeo} scale={1.003}>
-            <meshBasicMaterial color="#22d3ee" wireframe transparent opacity={0.07} />
-          </mesh>
-        </>
-      )}
-
-      {/* Cerebellum */}
-      <mesh geometry={cerebellumGeo} position={[0, -0.56, -0.78]}>
-        <meshStandardMaterial
-          color="#16354d"
-          emissive="#0d9488"
-          emissiveIntensity={0.22}
-          roughness={0.55}
-          metalness={0.15}
-          transparent
-          opacity={0.88}
-        />
-      </mesh>
-
-      {/* Brainstem */}
-      <mesh geometry={brainstemGeo} position={[0, -0.68, -0.18]} rotation={[0.2, 0, 0]}>
-        <meshStandardMaterial
-          color="#1f2347"
-          emissive="#6d28d9"
-          emissiveIntensity={0.22}
-          roughness={0.5}
-          metalness={0.2}
-          transparent
-          opacity={0.9}
-        />
-      </mesh>
+      </Suspense>
 
       {/* Internal commissural & projection neural tracts */}
       {pathwayGeos.map((geo, idx) => (
@@ -342,7 +550,7 @@ export function BrainScene() {
           <meshBasicMaterial
             color={idx % 2 === 0 ? '#22d3ee' : '#a78bfa'}
             transparent
-            opacity={0.45}
+            opacity={0.35}
           />
         </mesh>
       ))}

@@ -1,7 +1,7 @@
 import type { BrainRegion, NeuronAnatomyPart } from '@/src/types/neuroverse';
 
 export const ILLUSTRATIVE_BRAIN_DISCLAIMER =
-  'Illustrative 3D anatomical model and procedurally generated microcircuit — educational simulation, not a clinical scan or real human connectome.';
+  'Anatomically reconstructed 3D brain atlas derived from Z-Anatomy and BodyParts3D (DBCLS, CC BY-SA 4.0), with subcortical registration from CIT168 atlases. Educational simulation, not a patient diagnostic scan.';
 
 export const DEFAULT_BRAIN_REGIONS: BrainRegion[] = [
   {
@@ -120,7 +120,7 @@ export const DEFAULT_BRAIN_REGIONS: BrainRegion[] = [
     ],
     dominant_neurotransmitters: ['Serotonin', 'Norepinephrine', 'Acetylcholine', 'GABA'],
     approximate_neuron_scale: '~1 billion subcortical neurons (literature estimate)',
-    marker_position: [0.0, -1.06, -0.22],
+    marker_position: [0.0, -0.74, -0.16],
     accent_color: '#c084fc',
     is_illustrative_placeholder: true,
   },
