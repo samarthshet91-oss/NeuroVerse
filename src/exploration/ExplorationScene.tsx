@@ -67,14 +67,16 @@ export function ExplorationScene() {
 
   const effectiveDpr: [number, number] =
     isSoftwareGl || reducedQuality ? [1, 1] : [1, 1.75];
+  const isBrainView = explorationState === 'BRAIN_VIEW';
 
   return (
-    <div className="nv-viewport-grid relative h-full w-full bg-[#070B16]">
+    <div className={`nv-viewport-grid nv-viewport-${isBrainView ? 'brain' : 'micro'} relative h-full w-full`}>
       <Canvas
         dpr={effectiveDpr}
         camera={{ position: [2.8, 1.45, 3.65], fov: 44, near: 0.1, far: 90 }}
         gl={{
           antialias: !isSoftwareGl && !reducedQuality,
+          alpha: true,
           powerPreference: 'high-performance',
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.1,
@@ -89,13 +91,23 @@ export function ExplorationScene() {
           });
         }}
       >
-        <color attach="background" args={['#060911']} />
-        <fog attach="fog" args={['#060911', 12, 32]} />
+        <fog attach="fog" args={[isBrainView ? '#080d18' : '#101a2a', isBrainView ? 13 : 9, isBrainView ? 34 : 29]} />
 
-        {/* Balanced 3-point + hemisphere studio lighting (limited dynamic lights for laptop speed) */}
-        <hemisphereLight args={['#7dd3fc', '#090d1a', 0.72]} />
-        <directionalLight position={[6, 8, 6]} intensity={1.3} color="#fff7ed" />
-        <directionalLight position={[-6, 2, -5]} intensity={0.85} color="#38bdf8" />
+        {/* Macro anatomical lighting stays warm and diffuse; microscopic tissue uses cooler depth cues. */}
+        {isBrainView ? (
+          <>
+            <hemisphereLight args={['#f2dfc9', '#151c2b', 0.9]} />
+            <directionalLight position={[5.5, 7.5, 6.5]} intensity={1.5} color="#fff1df" />
+            <directionalLight position={[-5, 3, -4]} intensity={0.58} color="#b895a8" />
+            <directionalLight position={[0, -3, 4]} intensity={0.28} color="#9eb9c2" />
+          </>
+        ) : (
+          <>
+            <hemisphereLight args={['#7daeba', '#111827', 0.64]} />
+            <directionalLight position={[6, 7, 5]} intensity={0.95} color="#b7d9df" />
+            <directionalLight position={[-5, 1, -5]} intensity={0.55} color="#76648f" />
+          </>
+        )}
 
         <CameraTransition isSoftwareGl={isSoftwareGl || reducedQuality} />
 
@@ -109,7 +121,7 @@ export function ExplorationScene() {
       </Canvas>
 
       {/* Subtle viewport interaction hint */}
-      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-slate-700/45 bg-[#0b1120]/75 px-3 py-1 text-[10px] tracking-wide text-slate-400/90 shadow-xl backdrop-blur-md whitespace-nowrap">
+      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-slate-400/15 bg-[#101a2a]/72 px-3 py-1 text-[10px] tracking-wide text-[#9AA9BC] shadow-xl backdrop-blur-md whitespace-nowrap">
         {explorationState === 'BRAIN_VIEW'
           ? 'Drag to rotate · Scroll to zoom · Click any brain region to enter'
           : 'Drag to orbit · Scroll to zoom · Click any neuron to inspect & send a signal'}

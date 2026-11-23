@@ -80,12 +80,12 @@ interface RegionColors {
 }
 
 const REGION_ACCENT_COLORS: Record<BrainRegionId, RegionColors> = {
-  frontal: { base: '#22d3ee', emissive: '#0891b2' },
-  parietal: { base: '#38bdf8', emissive: '#0284c7' },
-  temporal: { base: '#a78bfa', emissive: '#7c3aed' },
-  occipital: { base: '#818cf8', emissive: '#4f46e5' },
-  cerebellum: { base: '#2dd4bf', emissive: '#0d9488' },
-  brainstem: { base: '#c084fc', emissive: '#9333ea' },
+  frontal: { base: '#55c9d6', emissive: '#176b78' },
+  parietal: { base: '#73b7c0', emissive: '#285b66' },
+  temporal: { base: '#8f83ad', emissive: '#514664' },
+  occipital: { base: '#7393ad', emissive: '#36536a' },
+  cerebellum: { base: '#77aaa0', emissive: '#315f58' },
+  brainstem: { base: '#9d8190', emissive: '#604653' },
 };
 
 /**
@@ -113,39 +113,36 @@ function AnatomicalBrainModel({
     const activeRegion = hoveredRegionId ?? selectedRegionId;
 
     const baseCortex = new THREE.MeshPhysicalMaterial({
-      color: '#1a2c46',
-      emissive: '#0b1c31',
-      emissiveIntensity: activeRegion ? 0.08 : 0.22,
-      roughness: 0.52,
-      metalness: 0.05,
-      transparent: true,
-      opacity: activeRegion ? 0.7 : 0.94,
-      clearcoat: reducedQuality ? 0 : 0.25,
-      clearcoatRoughness: 0.65,
+      color: '#d8c2af',
+      emissive: '#3a2f32',
+      emissiveIntensity: activeRegion ? 0.025 : 0.055,
+      roughness: 0.68,
+      metalness: 0,
+      transparent: false,
+      clearcoat: reducedQuality ? 0 : 0.08,
+      clearcoatRoughness: 0.88,
     });
 
     const baseCerebellum = new THREE.MeshPhysicalMaterial({
-      color: '#173048',
-      emissive: '#092732',
-      emissiveIntensity: activeRegion ? 0.08 : 0.24,
-      roughness: 0.6,
-      metalness: 0.04,
-      transparent: true,
-      opacity: activeRegion ? 0.72 : 0.95,
-      clearcoat: reducedQuality ? 0 : 0.2,
-      clearcoatRoughness: 0.7,
+      color: '#bda895',
+      emissive: '#2f2829',
+      emissiveIntensity: activeRegion ? 0.02 : 0.045,
+      roughness: 0.76,
+      metalness: 0,
+      transparent: false,
+      clearcoat: reducedQuality ? 0 : 0.04,
+      clearcoatRoughness: 0.92,
     });
 
     const baseBrainstem = new THREE.MeshPhysicalMaterial({
-      color: '#1d2645',
-      emissive: '#111533',
-      emissiveIntensity: activeRegion ? 0.08 : 0.25,
-      roughness: 0.48,
-      metalness: 0.06,
-      transparent: true,
-      opacity: activeRegion ? 0.75 : 0.96,
-      clearcoat: reducedQuality ? 0 : 0.3,
-      clearcoatRoughness: 0.5,
+      color: '#ae8f87',
+      emissive: '#35262a',
+      emissiveIntensity: activeRegion ? 0.02 : 0.05,
+      roughness: 0.64,
+      metalness: 0,
+      transparent: false,
+      clearcoat: reducedQuality ? 0 : 0.06,
+      clearcoatRoughness: 0.85,
     });
 
     const highlightedMaterials: Partial<Record<BrainRegionId, THREE.MeshStandardMaterial>> = {};
@@ -168,13 +165,12 @@ function AnatomicalBrainModel({
         highlightedMaterials[rId] = new THREE.MeshPhysicalMaterial({
           color: palette.base,
           emissive: palette.emissive,
-          emissiveIntensity: isHovered ? 1.05 : 0.78,
-          roughness: 0.35,
-          metalness: 0.08,
-          transparent: true,
-          opacity: 0.98,
-          clearcoat: reducedQuality ? 0 : 0.38,
-          clearcoatRoughness: 0.45,
+          emissiveIntensity: isHovered ? 0.28 : 0.18,
+          roughness: 0.56,
+          metalness: 0,
+          transparent: false,
+          clearcoat: reducedQuality ? 0 : 0.1,
+          clearcoatRoughness: 0.8,
         });
       }
     }
@@ -223,6 +219,7 @@ function AnatomicalBrainModel({
         } else if (cat === 'brainstem') {
           mesh.material = materials.baseBrainstem;
         } else {
+          // Keep hemispheres visually distinct without modifying the sourced anatomy geometry.
           mesh.material = materials.baseCortex;
         }
 
@@ -452,11 +449,11 @@ function RegionMarker({
       >
         <sphereGeometry args={[active ? 0.115 : 0.088, 16, 16]} />
         <meshStandardMaterial
-          color={region.accent_color}
-          emissive={region.accent_color}
-          emissiveIntensity={active ? 1.8 : 0.9}
-          roughness={0.2}
-          metalness={0.1}
+          color="#55c9d6"
+          emissive="#176b78"
+          emissiveIntensity={active ? 0.65 : 0.2}
+          roughness={0.42}
+          metalness={0}
         />
       </mesh>
 
@@ -464,9 +461,9 @@ function RegionMarker({
       <mesh ref={ringRef} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.16, 0.012, 10, 28]} />
         <meshBasicMaterial
-          color={region.accent_color}
+          color="#55c9d6"
           transparent
-          opacity={active ? 0.92 : 0.45}
+          opacity={active ? 0.7 : 0.28}
         />
       </mesh>
 
@@ -475,9 +472,9 @@ function RegionMarker({
         <mesh>
           <sphereGeometry args={[0.38, 16, 16]} />
           <meshBasicMaterial
-            color={region.accent_color}
+            color="#55c9d6"
             transparent
-            opacity={0.14}
+            opacity={0.07}
             depthWrite={false}
           />
         </mesh>
@@ -548,9 +545,9 @@ export function BrainScene() {
       {pathwayGeos.map((geo, idx) => (
         <mesh key={idx} geometry={geo}>
           <meshBasicMaterial
-            color={idx % 2 === 0 ? '#22d3ee' : '#a78bfa'}
+            color={idx % 2 === 0 ? '#5b9eaa' : '#806f96'}
             transparent
-            opacity={0.35}
+            opacity={0.18}
           />
         </mesh>
       ))}

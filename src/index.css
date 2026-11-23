@@ -6,16 +6,16 @@
     --font-display: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-    --nv-bg: #070B16;
-    --nv-bg-secondary: #0B1120;
-    --nv-panel: #111827;
-    --nv-elevated: #172033;
-    --nv-cyan: #22D3EE;
-    --nv-violet: #8B5CF6;
-    --nv-emerald: #10B981;
-    --nv-amber: #F59E0B;
-    --nv-text: #F1F5F9;
-    --nv-muted: #94A3B8;
+    --nv-bg: #080D18;
+    --nv-bg-secondary: #101A2A;
+    --nv-panel: #172438;
+    --nv-elevated: #1d2c42;
+    --nv-cyan: #55C9D6;
+    --nv-violet: #8a789d;
+    --nv-emerald: #4d8f84;
+    --nv-amber: #d9a34a;
+    --nv-text: #E5EAF2;
+    --nv-muted: #9AA9BC;
     --nv-border: rgba(148, 163, 184, 0.15);
   }
 
@@ -35,12 +35,12 @@
 
 @layer components {
   .nv-shell {
-    background: radial-gradient(ellipse 80% 55% at 55% 10%, rgba(34, 211, 238, 0.045), transparent 60%), var(--nv-bg);
+    background: radial-gradient(ellipse 75% 62% at 54% 18%, rgba(85, 201, 214, 0.055), transparent 58%), var(--nv-bg);
   }
-  .nv-shell::before { content: ''; pointer-events: none; position: fixed; inset: 0; z-index: 0; background: radial-gradient(circle at 80% 55%, rgba(139,92,246,.06), transparent 32%), radial-gradient(circle at 20% 15%, rgba(34,211,238,.045), transparent 28%); }
+  .nv-shell::before { content: ''; pointer-events: none; position: fixed; inset: 0; z-index: 0; background: radial-gradient(circle at 80% 55%, rgba(130,115,181,.07), transparent 35%), radial-gradient(circle at 20% 15%, rgba(85,201,214,.04), transparent 30%); }
   .nv-surface {
     border: 1px solid var(--nv-border);
-    background: rgba(17, 24, 39, 0.86);
+    background: rgba(23, 36, 56, 0.86);
     box-shadow: 0 18px 42px rgba(0, 0, 0, 0.15);
   }
   .nv-panel-heading h2 { font-size: 0.975rem; line-height: 1.3; font-weight: 650; color: var(--nv-text); letter-spacing: -0.012em; }
@@ -57,13 +57,17 @@
   .nv-action:focus-visible { outline: 2px solid var(--nv-cyan); outline-offset: 2px; }
   .nv-region-card { transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease; }
   .nv-region-card:hover { transform: translateX(2px); }
-  .nv-viewport-grid { background-image: linear-gradient(rgba(34,211,238,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,.035) 1px, transparent 1px); background-size: 48px 48px; }
+  .nv-viewport-grid { isolation: isolate; background-color: var(--nv-bg); }
+  .nv-viewport-grid::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: linear-gradient(rgba(148,178,198,.026) 1px, transparent 1px), linear-gradient(90deg, rgba(148,178,198,.026) 1px, transparent 1px); background-size: 72px 72px; mask-image: linear-gradient(to bottom, rgba(0,0,0,.38), transparent 80%); }
+  .nv-viewport-brain { background-image: radial-gradient(ellipse 42% 48% at 52% 42%, rgba(220, 184, 155, .16), transparent 56%), radial-gradient(ellipse 72% 80% at 50% 50%, #101a2a 0%, #080d18 72%); }
+  .nv-viewport-micro { background-image: radial-gradient(ellipse 35% 48% at 50% 46%, rgba(92, 114, 165, .17), transparent 62%), radial-gradient(ellipse 72% 80% at 52% 50%, #16213a 0%, #080d18 74%); }
   .nv-context-float { transition: width 260ms ease, top 260ms ease, bottom 260ms ease; }
-  .nv-context-panel { border: 1px solid rgba(148, 163, 184, .17); border-radius: 1rem; background: linear-gradient(160deg, rgba(17,24,39,.94), rgba(8,14,28,.9)); box-shadow: 0 28px 60px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.035); backdrop-filter: blur(18px); }
-  .nv-hud-card { border: 1px solid rgba(148,163,184,.16); border-radius: .875rem; background: rgba(8,14,28,.72); box-shadow: 0 18px 40px rgba(0,0,0,.24); backdrop-filter: blur(16px); }
-  .nv-signal-action { position: relative; overflow: hidden; box-shadow: 0 10px 26px rgba(34,211,238,.17); transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease; }
+  .nv-context-panel { border: 1px solid rgba(154,169,188,.18); border-radius: .875rem; background: linear-gradient(160deg, rgba(23,36,56,.94), rgba(16,26,42,.92)); box-shadow: 0 24px 52px rgba(0,0,0,.32), inset 0 1px rgba(255,255,255,.035); backdrop-filter: blur(18px); }
+  .nv-hud-card { border: 1px solid rgba(154,169,188,.16); border-radius: .75rem; background: rgba(16,26,42,.76); box-shadow: 0 16px 32px rgba(0,0,0,.22); backdrop-filter: blur(16px); }
+  .nv-control-cluster { border: 1px solid rgba(154,169,188,.14); border-radius: .75rem; background: rgba(16,26,42,.76); box-shadow: 0 12px 28px rgba(0,0,0,.18); backdrop-filter: blur(14px); }
+  .nv-signal-action { position: relative; overflow: hidden; box-shadow: 0 10px 26px rgba(85,201,214,.14); transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease; }
   .nv-signal-action::before { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,.34), transparent 70%); transform: translateX(-110%); transition: transform 420ms ease; }
-  .nv-signal-action:hover:not(:disabled) { transform: translateY(-1px); background: #67e8f9; box-shadow: 0 14px 34px rgba(34,211,238,.26); }
+  .nv-signal-action:hover:not(:disabled) { transform: translateY(-1px); background: #75d7e2; box-shadow: 0 14px 34px rgba(85,201,214,.22); }
   .nv-signal-action:hover:not(:disabled)::before { transform: translateX(110%); }
   .nv-mode-neuron_view .nv-context-float { width: 18.5rem; }
   .nv-mode-neuron_view .nv-context-panel { border-color: rgba(139,92,246,.28); }
@@ -73,6 +77,10 @@
   @media (max-width: 639px) {
     .nv-context-float { bottom: 1rem; top: 4.25rem; }
     .nv-mode-brain_view .nv-context-float { top: 4.25rem; bottom: 1rem; max-height: none; }
+  }
+  @media (max-width: 767px) {
+    .nv-viewport-grid::before { background-size: 56px 56px; }
+    .nv-context-panel { border-radius: .75rem; }
   }
 }
 

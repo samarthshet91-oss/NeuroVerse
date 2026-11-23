@@ -8,6 +8,7 @@ import type {
 export interface CameraPose {
   position: [number, number, number];
   target: [number, number, number];
+  fov: number;
 }
 
 /**
@@ -27,11 +28,13 @@ export function getCameraPoseForState(
       return {
         position: [mx * scale + 1.4, my * scale + 0.7, mz * scale + 1.9],
         target: [mx * 0.35, my * 0.35, mz * 0.35],
+        fov: 39,
       };
     }
     return {
       position: [2.8, 1.45, 3.65],
       target: [0, -0.05, 0],
+      fov: 38,
     };
   }
 
@@ -39,8 +42,9 @@ export function getCameraPoseForState(
     const [nx, ny, nz] = focusedNeuron.position;
     // Frame the neuron soma, dendrites, and outgoing axon cleanly from an oblique 3/4 angle
     return {
-      position: [nx + 2.15, ny + 1.35, nz + 3.05],
-      target: [nx + 0.25, ny, nz],
+      position: [nx + 2.35, ny + 1.5, nz + 3.45],
+      target: [nx + 0.18, ny + 0.04, nz],
+      fov: 33,
     };
   }
 
@@ -49,13 +53,15 @@ export function getCameraPoseForState(
     return {
       position: [nx + 3.0, ny + 1.9, nz + 4.4],
       target: [nx, ny, nz],
+      fov: 39,
     };
   }
 
   // REGION_VIEW / NETWORK_SIMULATION: wide immersive perspective inside the 3D neural tissue
   return {
-    position: [0.0, 4.2, 12.2],
-    target: [0, 0, 0],
+    position: [0.0, 4.5, 13.4],
+    target: [0, 0.1, 0],
+    fov: 42,
   };
 }
 

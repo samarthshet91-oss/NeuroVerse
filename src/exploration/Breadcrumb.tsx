@@ -31,8 +31,8 @@ export function Breadcrumb() {
       : <StatusBadge tone="amber">{lastSolverSource === 'fastapi-python' ? 'Python solver' : 'Local solver'}</StatusBadge>;
 
   return (
-    <div className="flex min-h-10 flex-wrap items-center justify-between gap-2 border-b border-slate-700/35 bg-[#0b1120]/80 px-3 py-1.5 text-xs backdrop-blur-xl sm:px-4">
-      <div className="flex items-center gap-2 overflow-x-auto text-[11px] text-slate-400">
+    <div className="nv-control-cluster flex min-h-10 flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 text-xs sm:px-3">
+      <div className="flex items-center gap-2 overflow-x-auto text-[11px] text-[#9AA9BC]">
         <button type="button" onClick={() => void initializeBackend()} title="Check simulation backend" className="nv-action border-transparent px-1 py-0.5">
           {solver}
         </button>
@@ -41,10 +41,10 @@ export function Breadcrumb() {
 
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {explorationState !== 'BRAIN_VIEW' && (
-          <div className="hidden md:flex items-center gap-1 rounded-lg border border-slate-700/50 bg-slate-950/35 p-0.5">
+          <div className="flex items-center gap-0.5 rounded-lg border border-slate-400/12 bg-[#080d18]/45 p-0.5">
             {DENSITY_OPTIONS.map((opt) => (
-              <button key={opt.value} type="button" onClick={() => setTissueDensity(opt.value)} className={`rounded-md px-2 py-1 text-[10px] font-mono-tabular whitespace-nowrap transition-colors ${tissueDensity === opt.value ? 'bg-cyan-400/15 text-cyan-100 shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}>
-                {opt.label}
+              <button key={opt.value} type="button" onClick={() => setTissueDensity(opt.value)} className={`rounded-md px-1.5 py-1 text-[10px] font-mono-tabular whitespace-nowrap transition-colors sm:px-2 ${tissueDensity === opt.value ? 'bg-[#55c9d6]/15 text-[#b7edf2] shadow-sm' : 'text-[#9AA9BC] hover:text-slate-200'}`}>
+                <span className="sm:hidden">{opt.value}</span><span className="hidden sm:inline">{opt.label}</span>
               </button>
             ))}
           </div>

@@ -16,7 +16,7 @@ import type {
   NeuronSimulationResponse,
 } from '@/src/types/neuroverse';
 
-const TRACE_COLORS = ['#22d3ee', '#a78bfa', '#38bdf8', '#2dd4bf', '#f59e0b', '#f472b6'];
+const TRACE_COLORS = ['#55c9d6', '#8273b5', '#719bb7', '#4b9a83', '#d9a15f', '#ad7d92'];
 
 interface MembraneChartProps {
   mode: 'neuron' | 'network';
@@ -68,25 +68,25 @@ export function MembraneChart({
     return (
       <ResponsiveContainer width="100%" height={180}>
         <LineChart data={neuronData} margin={{ top: 8, right: 16, left: -12, bottom: 0 }}>
-          <CartesianGrid stroke="#334155" strokeOpacity={0.5} strokeDasharray="3 5" />
+          <CartesianGrid stroke="#40516a" strokeOpacity={0.42} strokeDasharray="3 5" />
           <XAxis
             dataKey="time"
-            stroke="#64748b"
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
-            label={{ value: 'Time (ms)', position: 'insideBottomRight', offset: -2, fill: '#64748b', fontSize: 10 }}
+            stroke="#718198"
+            tick={{ fontSize: 11, fill: '#9AA9BC' }}
+            label={{ value: 'Time (ms)', position: 'insideBottomRight', offset: -2, fill: '#9AA9BC', fontSize: 10 }}
             tickFormatter={(v) => `${v}`}
           />
           <YAxis
-            stroke="#64748b"
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
+            stroke="#718198"
+            tick={{ fontSize: 11, fill: '#9AA9BC' }}
             domain={['auto', 'auto']}
-            label={{ value: 'mV', position: 'insideTopLeft', offset: 8, fill: '#64748b', fontSize: 10 }}
+            label={{ value: 'mV', position: 'insideTopLeft', offset: 8, fill: '#9AA9BC', fontSize: 10 }}
             tickFormatter={(v) => `${v}`}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#111827',
-              borderColor: 'rgba(34,211,238,.35)',
+              backgroundColor: '#172438',
+              borderColor: 'rgba(85,201,214,.35)',
               fontSize: '12px',
               color: '#e2e8f0',
             }}
@@ -95,9 +95,9 @@ export function MembraneChart({
           />
           <ReferenceLine
             y={vThresholdMv}
-            stroke="#f59e0b"
+            stroke="#d9a15f"
             strokeDasharray="4 4"
-            label={{ value: 'V_th', fill: '#fbbf24', fontSize: 10, position: 'insideTopRight' }}
+            label={{ value: 'V_th', fill: '#d9a15f', fontSize: 10, position: 'insideTopRight' }}
           />
           {compareResult && (
             <Line
@@ -115,7 +115,7 @@ export function MembraneChart({
             type="monotone"
             dataKey="v"
             name="Membrane V(t)"
-            stroke="#22d3ee"
+            stroke="#55c9d6"
             dot={false}
             strokeWidth={2}
             isAnimationActive={false}
@@ -129,31 +129,31 @@ export function MembraneChart({
     return (
       <ResponsiveContainer width="100%" height={180}>
         <LineChart data={networkData} margin={{ top: 8, right: 16, left: -12, bottom: 0 }}>
-          <CartesianGrid stroke="#334155" strokeOpacity={0.5} strokeDasharray="3 5" />
+          <CartesianGrid stroke="#40516a" strokeOpacity={0.42} strokeDasharray="3 5" />
           <XAxis
             dataKey="time"
-            stroke="#64748b"
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
-            label={{ value: 'Time (ms)', position: 'insideBottomRight', offset: -2, fill: '#64748b', fontSize: 10 }}
+            stroke="#718198"
+            tick={{ fontSize: 11, fill: '#9AA9BC' }}
+            label={{ value: 'Time (ms)', position: 'insideBottomRight', offset: -2, fill: '#9AA9BC', fontSize: 10 }}
             tickFormatter={(v) => `${v}`}
           />
           <YAxis
-            stroke="#64748b"
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
-            label={{ value: 'mV', position: 'insideTopLeft', offset: 8, fill: '#64748b', fontSize: 10 }}
+            stroke="#718198"
+            tick={{ fontSize: 11, fill: '#9AA9BC' }}
+            label={{ value: 'mV', position: 'insideTopLeft', offset: 8, fill: '#9AA9BC', fontSize: 10 }}
             tickFormatter={(v) => `${v}`}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#111827',
-              borderColor: 'rgba(34,211,238,.35)',
+              backgroundColor: '#172438',
+              borderColor: 'rgba(85,201,214,.35)',
               fontSize: '11px',
               color: '#e2e8f0',
             }}
             labelFormatter={(label) => `t = ${label} ms`}
           />
           <Legend wrapperStyle={{ fontSize: '11px' }} />
-          <ReferenceLine y={vThresholdMv} stroke="#f59e0b" strokeDasharray="4 4" />
+          <ReferenceLine y={vThresholdMv} stroke="#d9a15f" strokeDasharray="4 4" />
           {traceKeys.map((key, idx) => (
             <Line
               key={key}

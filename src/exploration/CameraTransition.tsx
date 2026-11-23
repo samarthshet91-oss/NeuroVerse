@@ -8,6 +8,7 @@ import { useExplorationStore } from '@/src/store/explorationStore';
 
 const _goalPos = new THREE.Vector3();
 const _goalTarget = new THREE.Vector3();
+let goalFov = 44;
 
 interface CameraTransitionProps {
   isSoftwareGl: boolean;
@@ -17,6 +18,7 @@ export function CameraTransition({ isSoftwareGl }: CameraTransitionProps) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const isTransitioningRef = useRef(false);
   const { camera } = useThree();
+  const perspectiveCamera = camera as THREE.PerspectiveCamera;
 
   const explorationState = useExplorationStore((s) => s.explorationState);
   const selectedRegionId = useExplorationStore((s) => s.selectedRegionId);
@@ -41,6 +43,7 @@ export function CameraTransition({ isSoftwareGl }: CameraTransitionProps) {
     );
     _goalPos.set(...pose.position);
     _goalTarget.set(...pose.target);
+    goalFov = pose.fov;
     isTransitioningRef.current = true;
   }, [
     explorationState,
@@ -62,6 +65,8 @@ export function CameraTransition({ isSoftwareGl }: CameraTransitionProps) {
     camera.position.x = THREE.MathUtils.damp(camera.position.x, _goalPos.x, lambda, dt);
     camera.position.y = THREE.MathUtils.damp(camera.position.y, _goalPos.y, lambda, dt);
     camera.position.z = THREE.MathUtils.damp(camera.position.z, _goalPos.z, lambda, dt);
+    perspectiveCamera.fov = THREE.MathUtils.damp(perspectiveCamera.fov, goalFov, lambda, dt);
+    perspectiveCamera.updateProjectionMatrix();
 
     controlsRef.current.target.x = THREE.MathUtils.damp(
       controlsRef.current.target.x,
@@ -86,8 +91,10 @@ export function CameraTransition({ isSoftwareGl }: CameraTransitionProps) {
 
     const posDist = camera.position.distanceTo(_goalPos);
     const targetDist = controlsRef.current.target.distanceTo(_goalTarget);
-    if (posDist < 0.02 && targetDist < 0.02) {
+    if (posDist < 0.02 && targetDist < 0.02 && Math.abs(perspectiveCamera.fov - goalFov) < 0.04) {
       camera.position.copy(_goalPos);
+      perspectiveCamera.fov = goalFov;
+      perspectiveCamera.updateProjectionMatrix();
       controlsRef.current.target.copy(_goalTarget);
       controlsRef.current.update();
       isTransitioningRef.current = false;

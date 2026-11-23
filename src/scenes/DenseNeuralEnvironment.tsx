@@ -282,11 +282,14 @@ export function DenseNeuralEnvironment() {
 
         const baseHex =
           node.role === 'inhibitory'
-            ? '#7c3aed'
+            ? '#685b82'
             : node.role === 'input'
-              ? '#0891b2'
-              : '#0284c7';
+              ? '#397b8b'
+              : '#365f86';
         _color.set(baseHex);
+        // Controlled deterministic value variation separates tissue layers without changing cell identity.
+        const depth = THREE.MathUtils.clamp((node.position[2] + 7) / 14, 0, 1);
+        _color.offsetHSL(0, -0.04, (depth - 0.5) * 0.11 + ((node.index % 5) - 2) * 0.008);
         somaInst.setColorAt(idx, _color);
         nucInst.setColorAt(idx, _color.clone().lerp(new THREE.Color('#e0f2fe'), 0.55));
       });
@@ -323,7 +326,7 @@ export function DenseNeuralEnvironment() {
         _dummy.scale.setScalar(edge.enabled ? 1 : 0.35);
         _dummy.updateMatrix();
         synInst.setMatrixAt(idx, _dummy.matrix);
-        _color.set(edge.synapse_type === 'inhibitory' ? '#c084fc' : '#38bdf8');
+        _color.set(edge.synapse_type === 'inhibitory' ? '#88759d' : '#608da5');
         synInst.setColorAt(idx, _color);
       });
       synInst.count = activeNetwork.edges.length;
@@ -350,13 +353,13 @@ export function DenseNeuralEnvironment() {
       );
 
       if (recentlySpiked) {
-        _color.set('#fde047');
+        _color.set('#d9a34a');
       } else if (node.id === selectedNeuronId) {
-        _color.set('#22d3ee');
+        _color.set('#55c9d6');
       } else if (node.role === 'inhibitory') {
-        _color.set('#7c3aed');
+        _color.set('#685b82');
       } else {
-        _color.set('#0284c7');
+        _color.set('#365f86');
       }
       somaInst.setColorAt(i, _color);
     }
@@ -645,10 +648,10 @@ export function DenseNeuralEnvironment() {
       {mergedDendritesGeo && (
         <mesh geometry={mergedDendritesGeo}>
           <meshStandardMaterial
-            color="#0ea5e9"
-            emissive="#0369a1"
-            emissiveIntensity={0.25}
-            roughness={0.45}
+            color="#263e62"
+            emissive="#12213d"
+            emissiveIntensity={0.12}
+            roughness={0.62}
             transparent
             opacity={tissueOpacity}
           />
@@ -658,10 +661,10 @@ export function DenseNeuralEnvironment() {
       {mergedAxonsGeo && (
         <mesh geometry={mergedAxonsGeo}>
           <meshStandardMaterial
-            color="#38bdf8"
-            emissive="#1e3a8a"
-            emissiveIntensity={0.2}
-            roughness={0.45}
+            color="#384b74"
+            emissive="#171f3f"
+            emissiveIntensity={0.1}
+            roughness={0.58}
             transparent
             opacity={isNeuronFocus ? 0.16 : 0.34}
           />
@@ -713,10 +716,10 @@ export function DenseNeuralEnvironment() {
           args={[myelinGeo, undefined, myelinTransforms.length]}
         >
           <meshStandardMaterial
-            color="#14b8a6"
-            emissive="#0f766e"
-            emissiveIntensity={0.22}
-            roughness={0.28}
+            color="#4d8f84"
+            emissive="#174b49"
+            emissiveIntensity={0.12}
+            roughness={0.48}
             transparent
             opacity={isNeuronFocus ? 0.28 : 0.62}
           />
@@ -781,9 +784,9 @@ export function DenseNeuralEnvironment() {
             {selectedDendriteGeos.map((geo, idx) => (
               <mesh key={idx} geometry={geo}>
                 <meshStandardMaterial
-                  color={selectedAnatomyPart === 'dendrites' ? '#67e8f9' : '#22d3ee'}
-                  emissive="#22d3ee"
-                  emissiveIntensity={selectedAnatomyPart === 'dendrites' ? 1.1 : 0.6}
+                  color={selectedAnatomyPart === 'dendrites' ? '#78d6df' : '#4d9ead'}
+                  emissive="#176274"
+                  emissiveIntensity={selectedAnatomyPart === 'dendrites' ? 0.52 : 0.22}
                   roughness={0.48}
                   metalness={0.02}
                 />
@@ -791,7 +794,7 @@ export function DenseNeuralEnvironment() {
             ))}
             {selectedTertiaryGeos.map((geo, idx) => (
               <mesh key={`twig-${idx}`} geometry={geo}>
-                <meshStandardMaterial color="#2aa4c5" emissive="#0c5673" emissiveIntensity={0.22} roughness={0.56} metalness={0} />
+                <meshStandardMaterial color="#477f95" emissive="#133a52" emissiveIntensity={0.12} roughness={0.64} metalness={0} />
               </mesh>
             ))}
           </group>
