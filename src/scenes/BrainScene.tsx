@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useMemo, useRef } from 'react';
-import { Html, useGLTF } from '@react-three/drei';
+import { Html, Line, useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useExplorationStore } from '@/src/store/explorationStore';
@@ -481,22 +481,38 @@ function RegionMarker({
       )}
 
       {showLabels && (
-        <Html
-          position={[0, 0.22, 0]}
-          center
-          distanceFactor={6.5}
-          style={{ pointerEvents: 'none' }}
-        >
-          <div
-            className={`px-2 py-0.5 text-[11px] font-medium whitespace-nowrap rounded border transition-colors ${
-              active
-                ? 'bg-slate-950/95 text-cyan-200 border-cyan-400/60'
-                : 'bg-slate-950/80 text-slate-300 border-slate-700/70'
-            }`}
+        <group>
+          {/* Subtle vertical leader stem connecting beacon to label */}
+          <Line
+            points={[[0, active ? 0.11 : 0.088, 0], [0, 0.20, 0]]}
+            color={active ? '#67e8f9' : '#55c9d6'}
+            opacity={active ? 0.75 : 0.4}
+            transparent
+            lineWidth={1.2}
+          />
+          <Html
+            position={[0, 0.23, 0]}
+            center
+            distanceFactor={6.5}
+            zIndexRange={[100, 0]}
+            style={{ pointerEvents: 'none', userSelect: 'none' }}
           >
-            {region.short_label}
-          </div>
-        </Html>
+            <div
+              className={`px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap rounded border shadow-lg backdrop-blur-md select-none transition-all ${
+                active
+                  ? 'bg-slate-950/95 text-cyan-200 border-cyan-400/80 shadow-cyan-950/50 scale-105'
+                  : 'bg-slate-950/85 text-slate-300 border-slate-700/80 shadow-black/60'
+              }`}
+              style={{
+                boxShadow: active
+                  ? '0 4px 14px rgba(0,0,0,0.7), 0 0 10px rgba(85,201,214,0.3)'
+                  : '0 4px 10px rgba(0,0,0,0.6)',
+              }}
+            >
+              {region.short_label}
+            </div>
+          </Html>
+        </group>
       )}
     </group>
   );

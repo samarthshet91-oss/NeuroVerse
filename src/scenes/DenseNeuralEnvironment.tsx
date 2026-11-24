@@ -124,9 +124,34 @@ function AnatomyCallout({
 }) {
   return (
     <group>
-      <Line points={[target, anchor]} color={tone} transparent opacity={0.5} lineWidth={0.75} />
-      <Html position={anchor} center distanceFactor={6} style={{ pointerEvents: 'none' }}>
-        <div className="rounded border bg-slate-950/88 px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap shadow-lg" style={{ borderColor: `${tone}99`, color: tone }}>
+      {/* Precision pinpoint dot on biological feature */}
+      <mesh position={target}>
+        <sphereGeometry args={[0.022, 8, 8]} />
+        <meshBasicMaterial color={tone} />
+      </mesh>
+      {/* Crisp high-contrast leader line */}
+      <Line points={[target, anchor]} color={tone} transparent opacity={0.78} lineWidth={1.3} />
+      {/* Small anchor dot at label origin */}
+      <mesh position={anchor}>
+        <sphereGeometry args={[0.014, 8, 8]} />
+        <meshBasicMaterial color={tone} />
+      </mesh>
+      <Html
+        position={anchor}
+        center
+        distanceFactor={6}
+        zIndexRange={[120, 0]}
+        style={{ pointerEvents: 'none', userSelect: 'none' }}
+      >
+        <div
+          className="rounded border px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap shadow-lg backdrop-blur-md select-none transition-all"
+          style={{
+            backgroundColor: 'rgba(6, 11, 22, 0.94)',
+            borderColor: `${tone}99`,
+            color: tone,
+            boxShadow: `0 3px 12px rgba(0,0,0,0.75), 0 0 10px ${tone}25`,
+          }}
+        >
           {label}
         </div>
       </Html>
@@ -512,8 +537,8 @@ export function DenseNeuralEnvironment() {
     const placed: THREE.Vector3[] = [];
     const pickClearAnchor = (candidate: THREE.Vector3, fallbackOffset: THREE.Vector3): [number, number, number] => {
       const p = candidate.clone();
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const tooClose = placed.some((other) => other.distanceTo(p) < 0.78);
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const tooClose = placed.some((other) => other.distanceTo(p) < 0.82);
         if (!tooClose) break;
         p.add(fallbackOffset);
       }
@@ -523,12 +548,12 @@ export function DenseNeuralEnvironment() {
 
     const somaVec = new THREE.Vector3(...neuron.position);
     const somaLabel = pickClearAnchor(
-      somaVec.clone().add(new THREE.Vector3(0, 0.48, 0)),
-      new THREE.Vector3(0, 0.25, 0)
+      somaVec.clone().add(new THREE.Vector3(0, 0.52, 0)),
+      new THREE.Vector3(0, 0.28, 0)
     );
     const nucleusLabel = pickClearAnchor(
-      somaVec.clone().add(new THREE.Vector3(0.2, -0.15, 0.2)),
-      new THREE.Vector3(0.22, -0.2, 0)
+      somaVec.clone().add(new THREE.Vector3(0.24, -0.18, 0.2)),
+      new THREE.Vector3(0.25, -0.22, 0)
     );
 
     const primaryOut = connEdges.find((e) => e.source === neuron.id) ?? null;
@@ -548,10 +573,10 @@ export function DenseNeuralEnvironment() {
           }
         }
       }
-      const outward = bestTip.clone().sub(somaVec).normalize().multiplyScalar(0.24);
+      const outward = bestTip.clone().sub(somaVec).normalize().multiplyScalar(0.26);
       dendLabel = pickClearAnchor(
-        bestTip.clone().add(outward).add(new THREE.Vector3(0, 0.14, 0)),
-        new THREE.Vector3(-0.32, 0.2, 0)
+        bestTip.clone().add(outward).add(new THREE.Vector3(0, 0.16, 0)),
+        new THREE.Vector3(-0.35, 0.22, 0)
       );
     }
 
@@ -565,27 +590,27 @@ export function DenseNeuralEnvironment() {
       const outCurve = edgeCurves.get(primaryOut.id);
       if (neuron.has_myelin && outCurve) {
         myelinLabel = pickClearAnchor(
-          outCurve.getPoint(0.45).add(new THREE.Vector3(0, 0.34, 0)),
-          new THREE.Vector3(0, 0.28, 0.2)
+          outCurve.getPoint(0.45).add(new THREE.Vector3(0, 0.38, 0)),
+          new THREE.Vector3(0, 0.32, 0.2)
         );
       }
       if (outCurve) {
         axonLabel = pickClearAnchor(
-          outCurve.getPoint(0.23).add(new THREE.Vector3(0, -0.34, 0)),
-          new THREE.Vector3(0.28, -0.2, 0)
+          outCurve.getPoint(0.23).add(new THREE.Vector3(0, -0.36, 0)),
+          new THREE.Vector3(0.3, -0.22, 0)
         );
       }
       terminalLabel = pickClearAnchor(
-        new THREE.Vector3(...primaryOut.terminal_position).add(new THREE.Vector3(0, 0.34, 0)),
-        new THREE.Vector3(0.25, 0.28, 0)
+        new THREE.Vector3(...primaryOut.terminal_position).add(new THREE.Vector3(0.25, 0.36, 0)),
+        new THREE.Vector3(0.28, 0.28, 0)
       );
       synapseLabel = pickClearAnchor(
-        new THREE.Vector3(...primaryOut.target_dendrite_tip).add(new THREE.Vector3(0, -0.34, 0)),
-        new THREE.Vector3(0.25, -0.28, 0)
+        new THREE.Vector3(...primaryOut.target_dendrite_tip).add(new THREE.Vector3(-0.28, -0.36, 0)),
+        new THREE.Vector3(-0.28, -0.28, 0)
       );
       spineLabel = pickClearAnchor(
-        new THREE.Vector3(...primaryOut.target_dendrite_tip).add(new THREE.Vector3(0.26, 0.1, 0)),
-        new THREE.Vector3(0.28, 0.14, 0)
+        new THREE.Vector3(...primaryOut.target_dendrite_tip).add(new THREE.Vector3(0.32, 0.18, 0.24)),
+        new THREE.Vector3(0.28, 0.16, 0.22)
       );
     }
 
@@ -663,10 +688,10 @@ export function DenseNeuralEnvironment() {
           <meshStandardMaterial
             color="#384b74"
             emissive="#171f3f"
-            emissiveIntensity={0.1}
+            emissiveIntensity={isNeuronFocus ? 0.08 : 0.14}
             roughness={0.58}
             transparent
-            opacity={isNeuronFocus ? 0.16 : 0.34}
+            opacity={isNeuronFocus ? 0.14 : 0.42}
           />
         </mesh>
       )}

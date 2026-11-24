@@ -11,6 +11,10 @@ export function NeuroVerseShell() {
   const initializeBackend = useExplorationStore((s) => s.initializeBackend);
   const showInfoPanel = useExplorationStore((s) => s.showInfoPanel);
   const explorationState = useExplorationStore((s) => s.explorationState);
+  const showChartDrawer = useExplorationStore((s) => s.showChartDrawer);
+  const simError = useExplorationStore((s) => s.simError);
+
+  const isDrawerActive = (showChartDrawer || Boolean(simError)) && explorationState !== 'BRAIN_VIEW';
 
   useEffect(() => {
     void initializeBackend();
@@ -28,7 +32,11 @@ export function NeuroVerseShell() {
         </div>
         <ViewportHud />
         {showInfoPanel && (
-          <div className="nv-context-float absolute bottom-4 left-3 top-16 z-20 w-[21rem] max-w-[calc(100vw-1.5rem)] sm:left-4 sm:top-4 lg:top-4">
+          <div
+            className={`nv-context-float absolute left-3 top-16 z-20 w-[21rem] max-w-[calc(100vw-1.5rem)] sm:left-4 sm:top-4 lg:top-4 transition-all duration-300 ${
+              isDrawerActive ? 'bottom-[270px]' : 'bottom-4'
+            }`}
+          >
             <ContextInfoPanel />
           </div>
         )}

@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Info,
   Navigation,
+  PanelLeftClose,
   Pause,
   Play,
   RotateCcw,
@@ -91,6 +92,7 @@ export function ContextInfoPanel() {
   const setPlaybackTimeMs = useExplorationStore((s) => s.setPlaybackTimeMs);
   const setExperimentOpen = useExplorationStore((s) => s.setExperimentOpen);
   const setShowChartDrawer = useExplorationStore((s) => s.setShowChartDrawer);
+  const setShowInfoPanel = useExplorationStore((s) => s.setShowInfoPanel);
   const updateLifParam = useExplorationStore((s) => s.updateLifParam);
   const resetLifParams = useExplorationStore((s) => s.resetLifParams);
   const selectEdge = useExplorationStore((s) => s.selectEdge);
@@ -128,15 +130,25 @@ export function ContextInfoPanel() {
       {/* WHOLE BRAIN VIEW */}
       {explorationState === 'BRAIN_VIEW' && (
         <>
-          <div>
-            <PanelHeading eyebrow="Exploration level 01" title="Whole brain atlas" />
-            <p className="mt-1 text-xs leading-relaxed text-slate-400">
-              Spin and zoom the 3D brain, then pick a region to fly inside its branching neural
-              tissue.
-            </p>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <PanelHeading eyebrow="Exploration level 01" title="Whole brain atlas" />
+              <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                Spin and zoom the 3D brain, then pick a region to fly inside its branching neural
+                tissue.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowInfoPanel(false)}
+              className="mt-0.5 rounded-lg border border-slate-700/50 bg-slate-800/40 p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors shrink-0"
+              title="Hide guide panel"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="flex flex-col gap-2">
             {regions.map((region) => {
               const isActive = (hoveredRegionId ?? selectedRegionId) === region.id;
               return (
@@ -146,25 +158,26 @@ export function ContextInfoPanel() {
                   onMouseEnter={() => setHoveredRegion(region.id)}
                   onMouseLeave={() => setHoveredRegion(null)}
                   onClick={() => selectRegion(region.id)}
-                  className={`nv-region-card group flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left ${
+                  className={`nv-region-card group flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-left transition-all ${
                     isActive
-                      ? 'border-cyan-400/50 bg-cyan-400/10 text-cyan-100 shadow-[inset_2px_0_0_#22d3ee]'
-                      : 'border-slate-700/50 bg-slate-900/35 text-slate-300 hover:border-slate-600 hover:bg-slate-800/80'
+                      ? 'border-cyan-400/60 bg-cyan-400/12 text-cyan-100 shadow-[inset_3px_0_0_#22d3ee]'
+                      : 'border-slate-700/50 bg-slate-900/40 text-slate-300 hover:border-slate-600 hover:bg-slate-800/80'
                   }`}
                 >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 text-[11px] font-medium">
+                  <div className="min-w-0 flex-1 pr-2">
+                    <div className="flex items-center gap-2 text-xs font-medium">
                       <span
-                        className="h-2 w-2 shrink-0 rounded-full"
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{ backgroundColor: region.accent_color }}
                       />
-                      <span className="truncate">{region.name}</span>
+                      <span className="font-semibold text-slate-100">{region.name}</span>
+                      <span className="ml-auto text-[10px] font-mono-tabular text-slate-500 uppercase tracking-wider">{region.short_label}</span>
                     </div>
-                    <p className="mt-0.5 truncate text-[10px] text-slate-400">
+                    <p className="mt-1 text-[11px] leading-snug text-slate-400 group-hover:text-slate-300">
                       {region.subtitle}
                     </p>
                   </div>
-                  <ArrowRight className="ml-2 h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-cyan-300" />
+                  <ArrowRight className="h-4 w-4 shrink-0 text-slate-500 transition-transform group-hover:translate-x-1 group-hover:text-cyan-300" />
                 </button>
               );
             })}
@@ -193,25 +206,35 @@ export function ContextInfoPanel() {
       {/* DENSE NEURAL TISSUE & INDIVIDUAL NEURON EXPLORATION */}
       {explorationState !== 'BRAIN_VIEW' && selectedRegion && (
         <>
-          <div>
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <span className="nv-eyebrow mb-0">Exploration level {explorationState === 'NEURON_VIEW' ? '03' : '02'}</span>
-              <StatusBadge tone={explorationState === 'NEURON_VIEW' ? 'violet' : 'cyan'}>{explorationState === 'NEURON_VIEW' ? 'Neuron focus' : 'Tissue map'}</StatusBadge>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <div className="mb-1 flex items-center gap-2">
+                <span className="nv-eyebrow mb-0">Exploration level {explorationState === 'NEURON_VIEW' ? '03' : '02'}</span>
+                <StatusBadge tone={explorationState === 'NEURON_VIEW' ? 'violet' : 'cyan'}>{explorationState === 'NEURON_VIEW' ? 'Neuron focus' : 'Tissue map'}</StatusBadge>
+              </div>
+              <div className="text-[11px] text-cyan-400">
+                {selectedRegion.name} ·{' '}
+                {activeNetwork ? `${activeNetwork.nodes.length} neurons` : 'Tissue'}
+              </div>
+              <h2 className="mt-0.5 font-display text-base font-semibold text-slate-100">
+                {explorationState === 'NEURON_VIEW' && selectedNeuron
+                  ? `${selectedNeuron.label} Close-Up`
+                  : 'Neural Tissue Environment'}
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                {explorationState === 'NEURON_VIEW'
+                  ? 'Click any part of this cell—dendrites, soma, axon, myelin, terminals, or synapse—to learn what it does.'
+                  : 'Click any branching neuron in the 3D tissue to inspect its connections and send a real electrical signal.'}
+              </p>
             </div>
-            <div className="text-[11px] text-cyan-400">
-              {selectedRegion.name} ·{' '}
-              {activeNetwork ? `${activeNetwork.nodes.length} neurons` : 'Tissue'}
-            </div>
-            <h2 className="mt-0.5 font-display text-base font-semibold text-slate-100">
-              {explorationState === 'NEURON_VIEW' && selectedNeuron
-                ? `${selectedNeuron.label} Close-Up`
-                : 'Neural Tissue Environment'}
-            </h2>
-            <p className="mt-1 text-xs leading-relaxed text-slate-400">
-              {explorationState === 'NEURON_VIEW'
-                ? 'Click any part of this cell—dendrites, soma, axon, myelin, terminals, or synapse—to learn what it does.'
-                : 'Click any branching neuron in the 3D tissue to inspect its connections and send a real electrical signal.'}
-            </p>
+            <button
+              type="button"
+              onClick={() => setShowInfoPanel(false)}
+              className="mt-0.5 rounded-lg border border-slate-700/50 bg-slate-800/40 p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors shrink-0"
+              title="Hide guide panel"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
           </div>
 
           {/* Selected Neuron Card (Beginner-Friendly Primary Actions) */}
