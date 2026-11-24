@@ -1,8 +1,27 @@
+
+# Frontend - Node.js
 node_modules/
 build/
 dist/
 coverage/
-.DS_Store
-*.log
-.env*
+
+# Backend - Python
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Environment variables and secrets
+.env
+.env.*
 !.env.example
+
+# Logs
+*.log
+
+# Operating system
+.DS_Store
+Thumbs.db
